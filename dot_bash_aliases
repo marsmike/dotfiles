@@ -1,0 +1,58 @@
+# Directory navigation
+alias ..='cd ..'
+alias ...='cd ../../../'
+alias ....='cd ../../../../'
+alias .....='cd ../../../../..'
+alias ~="cd ~" # `cd` is probably faster to type but habit is a powerful thing.
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+
+# Networking
+alias ping='ping -c 5'
+alias ports='netstat -tulanp'
+
+# System updates and cleaning for Debian/Ubuntu systems
+alias update='sudo apt update && sudo apt upgrade'
+alias clean='sudo apt autoremove && sudo apt autoclean'
+
+# Quick shortcuts
+alias h='history'
+alias c='clear'
+
+# Docker
+alias d='docker'
+alias dc='docker-compose'
+alias dcls='docker container ls'
+alias dils='docker image ls'
+alias dps='docker ps'
+alias dpsa='docker ps -a'
+
+# Kubernetes
+alias k='kubectl'
+alias kgp='kubectl get pods'
+alias kgs='kubectl get svc'
+alias kgn='kubectl get nodes'
+alias kgc='kubectl get componentstatuses'
+alias kctx='kubectl config current-context'
+alias kcon='kubectl config use-context'
+
+# Git
+alias gs='git status'
+alias gb='git branch'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gpl='git pull'
+alias gco='git checkout'
+alias glog='git log --oneline --decorate'
+
+# Terraform
+alias tf='terraform'
+alias tfp='terraform plan'
+alias tfa='terraform apply'
+alias tfd='terraform destroy'
+
+# AWS CLI
+alias awslist='aws ec2 describe-instances --query "Reservations[].Instances[].[InstanceId,State.Name,Tags[?Key==`Name`].Value[]]" --output table'
+
