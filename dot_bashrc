@@ -113,7 +113,6 @@ if ! shopt -oq posix; then
   fi
 fi
 
-# Extend the PATH before Anaconda!
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/bin:$PATH"
 
 # >>> conda initialize >>>
