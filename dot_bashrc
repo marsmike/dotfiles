@@ -113,7 +113,7 @@ if ! shopt -oq posix; then
   fi
 fi
 
-export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/bin:$PATH"
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
@@ -129,4 +129,7 @@ else
 fi
 unset __conda_setup
 # <<< conda initialize <<<
+
+eval "$(mcfly init bash)"
+eval "$(zoxide init bash)"
 

@@ -136,7 +136,7 @@ autoload -U compinit && compinit
 export EDITOR='nvim'
 
 # Set PATH, MANPATH, etc., as needed
-export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/bin:$PATH"
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
@@ -153,3 +153,5 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
+eval "$(mcfly init zsh)"
+eval "$(zoxide init zsh)"
