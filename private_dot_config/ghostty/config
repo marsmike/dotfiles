@@ -1,0 +1,50 @@
+# Ghostty config — ~/.config/ghostty/config
+# Docs: ghostty.org/docs/config
+
+# ── Appearance ───────────────────────────────────────────────────────────────
+
+theme = catppuccin-mocha
+font-family = MesloLGS NF
+font-size = 16
+
+window-padding-x = 8
+window-padding-y = 8
+
+# Keep padding balanced when terminal subdivides (splits etc.)
+window-padding-balance = true
+
+# Slightly translucent background (matches WezTerm's 30-blur feel)
+background-opacity = 0.95
+macos-window-shadow = true
+
+# ── Cursor ───────────────────────────────────────────────────────────────────
+
+cursor-style = bar
+cursor-style-blink = true
+mouse-hide-while-typing = true
+
+# ── Shell & Integration ──────────────────────────────────────────────────────
+
+# Auto-detect shell (zsh); enables prompt tracking, marks, title updates
+shell-integration = detect
+shell-integration-features = cursor,sudo,title
+
+# ── macOS ────────────────────────────────────────────────────────────────────
+
+# Left Option = Alt (needed for many terminal shortcuts, nvim, tmux)
+# Right Option = still types special chars (é, ü, etc.)
+macos-option-as-alt = left
+
+# Use macOS native full screen (not the borderless overlay style)
+macos-titlebar-style = tabs
+
+# Don't ask "close this terminal?" every time
+confirm-close-surface = false
+
+# Quit the app when the last window closes
+quit-after-last-window-closed = true
+
+# ── Keybindings ──────────────────────────────────────────────────────────────
+
+# Cmd+F — toggle full screen (mirrors WezTerm Ctrl+F)
+keybind = cmd+f=toggle_fullscreen
