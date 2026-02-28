@@ -3,7 +3,7 @@
 
 # ── Appearance ───────────────────────────────────────────────────────────────
 
-theme = catppuccin-mocha
+theme = Catppuccin Mocha
 font-family = MesloLGS NF
 font-size = 16
 
