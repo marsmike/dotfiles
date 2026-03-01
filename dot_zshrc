@@ -126,6 +126,20 @@ alias kns='kubectl config set-context --current --namespace'
 # Terraform shortcuts
 alias tf='terraform'
 
+# Claude Code with permissions bypassed
+alias cc='claude --dangerously-skip-permissions'
+
+# Claude Code using Kimi K2 (credentials stored in ~/.kimi.env, managed by chezmoi)
+function ck() {
+  (source ~/.kimi.env && claude --dangerously-skip-permissions "$@")
+}
+
+# Claude Code using Kimi K2 with extended thinking mode enabled
+# MAX_THINKING_TOKENS controls the reasoning budget (default max: 31999)
+function ckt() {
+  (source ~/.kimi.env && MAX_THINKING_TOKENS=31999 claude --dangerously-skip-permissions "$@")
+}
+
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
