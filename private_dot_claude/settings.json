@@ -1,0 +1,23 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "input=$(cat); dir=$(echo \"$input\" | jq -r '.workspace.current_dir'); model=$(echo \"$input\" | jq -r '.model.display_name'); remaining=$(echo \"$input\" | jq -r '.context_window.remaining_percentage // empty'); [ -n \"$remaining\" ] && printf '%s | %s | Context: %.1f%% remaining' \"$(basename \"$dir\")\" \"$model\" \"$remaining\" || printf '%s | %s' \"$(basename \"$dir\")\" \"$model\""
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "smart-search@mars-plugins": true,
+    "distill@mars-plugins": true,
+    "project-spec@mars-plugins": true,
+    "notebooklm@mars-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "mars-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "marsmike/claude-plugins"
+      }
+    }
+  },
+  "skipDangerousModePermissionPrompt": true
+}

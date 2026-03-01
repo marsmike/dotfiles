@@ -1,0 +1,19 @@
+# Claude Code runtime/plugin state — never track these
+private_dot_claude/history.jsonl
+private_dot_claude/session-env/**
+private_dot_claude/cache/**
+private_dot_claude/plugins/**
+private_dot_claude/projects/**
+private_dot_claude/todos/**
+private_dot_claude/tasks/**
+private_dot_claude/plans/**
+private_dot_claude/backups/**
+private_dot_claude/debug/**
+private_dot_claude/file-history/**
+private_dot_claude/paste-cache/**
+private_dot_claude/shell-snapshots/**
+private_dot_claude/stats-cache.json
+private_dot_claude/statsig/**
+private_dot_claude/telemetry/**
+private_dot_claude/ide/**
+private_dot_claude/settings.local.json
