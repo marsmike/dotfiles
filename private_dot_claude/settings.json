@@ -6,13 +6,13 @@
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
-    "smart-search@mars-plugins": true,
-    "distill@mars-plugins": true,
-    "project-spec@mars-plugins": true,
-    "notebooklm@mars-plugins": true
+    "smart-search@mike-plugins": true,
+    "distill@mike-plugins": true,
+    "project-spec@mike-plugins": true,
+    "notebooklm@mike-plugins": true
   },
   "extraKnownMarketplaces": {
-    "mars-plugins": {
+    "mike-plugins": {
       "source": {
         "source": "github",
         "repo": "marsmike/claude-plugins"
