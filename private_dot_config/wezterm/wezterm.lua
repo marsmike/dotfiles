@@ -1,7 +1,7 @@
 local wezterm = require 'wezterm'
 return {
 	-- color_scheme = 'termnial.sexy',
-	color_scheme = 'Catppuccin Mocha',
+	color_scheme = 'Catppuccin Latte',
 	enable_tab_bar = false,
 	font = wezterm.font("MesloLGS NF"),
 	font_size = 16.0,
