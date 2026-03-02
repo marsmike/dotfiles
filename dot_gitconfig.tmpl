@@ -1,0 +1,107 @@
+[user]
+	name = Mike Mueller
+	email = mike@objektarium.de
+
+[alias]
+	# Status & info
+	st = status
+	br = branch -av
+	branches = branch -a
+	tags = tag -l
+	remotes = remote -v
+	currentbranch = !git branch --show-current
+	out = log @{u}..
+
+	# Committing
+	cm = commit
+	ci = commit
+	amend = "!git log -n 1 --pretty=tformat:%s%n%n%b | git commit -F - --amend"
+	fixup = commit --fixup=HEAD
+
+	# Branching & navigation
+	co = checkout
+	sw = switch
+
+	# Diffing
+	df = diff
+	dfs = diff --staged
+	wdiff = diff --color-words
+
+	# Logging
+	l = "log -16 --color=always --all --topo-order --pretty='%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
+	ll = "log --color=always --all --topo-order --pretty='%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+	lg = "log -10 --color=always --all --graph --topo-order --pretty='%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
+	lgl = "log --color=always --all --graph --topo-order --pretty='%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+	logg = log --graph --decorate --oneline --all
+
+[core]
+	editor = nvim
+
+[fetch]
+	prune = true
+
+[push]
+	autoSetupRemote = true
+
+[pull]
+	ff = only
+
+[rebase]
+	autoSquash = true
+
+[merge]
+	conflictstyle = zdiff3
+
+[diff]
+	algorithm = histogram
+
+[rerere]
+	enabled = true
+
+[log]
+	follow = true
+
+[column]
+	ui = auto
+
+[init]
+	defaultBranch = main
+
+[credential "https://github.com"]
+	helper =
+	helper = !{{ lookPath "gh" }} auth git-credential
+
+[credential "https://gist.github.com"]
+	helper =
+	helper = !{{ lookPath "gh" }} auth git-credential
+
+[credential]
+	helper = store
+
+[url "https://github.com/"]
+	insteadOf = gh:
+
+[url "https://gist.github.com/"]
+	insteadOf = gist:
+
+[url "https://bitbucket.org/"]
+	insteadOf = bb:
+
+[color]
+	ui = true
+
+[color "branch"]
+	current = yellow reverse
+	local = yellow
+	remote = green
+
+[color "diff"]
+	meta = yellow bold
+	frag = magenta bold
+	old = red bold
+	new = green bold
+
+[color "status"]
+	added = yellow
+	changed = green
+	untracked = red
