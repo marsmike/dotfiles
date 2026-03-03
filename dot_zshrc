@@ -1,6 +1,9 @@
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
+# Source personal environment variables (API keys, tokens, etc.)
+[ -f ~/.env ] && source ~/.env
+
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
@@ -218,3 +221,6 @@ unset __conda_setup
 # <<< conda initialize <<<
 
 eval "$(zoxide init zsh)"
+
+# direnv hook for auto-loading .env files
+eval "$(direnv hook zsh)"
