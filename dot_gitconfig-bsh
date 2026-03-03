@@ -1,6 +1,6 @@
 [user]
 	name = Mike Mueller
-	email = mike@objektarium.de
+	email = Mike.MuellerM@bshg.com
 
 [alias]
 	# Status & info
@@ -35,7 +35,10 @@
 	logg = log --graph --decorate --oneline --all
 
 [core]
-	editor = nvim
+	editor = vim
+
+[init]
+	defaultBranch = main
 
 [fetch]
 	prune = true
@@ -64,16 +67,23 @@
 [column]
 	ui = auto
 
-[init]
-	defaultBranch = main
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
 
 [credential "https://github.com"]
 	helper =
-	helper = !{{ lookPath "gh" }} auth git-credential
+	helper = !/usr/bin/gh auth git-credential
 
 [credential "https://gist.github.com"]
 	helper =
-	helper = !{{ lookPath "gh" }} auth git-credential
+	helper = !/usr/bin/gh auth git-credential
+
+[credential "https://github-bshg.boschdevcloud.com"]
+	helper =
+	helper = !/usr/bin/gh auth git-credential
 
 [credential]
 	helper = store
