@@ -134,3 +134,8 @@ unset __conda_setup
 
 eval "$(zoxide init bash)"
 
+# Auto-switch to zsh (LDAP-managed shell workaround)
+if [ -n "$BASH_VERSION" ] && [ -z "$ZSH_VERSION" ] && command -v zsh &>/dev/null; then
+  export SHELL=$(command -v zsh)
+  exec zsh
+fi
