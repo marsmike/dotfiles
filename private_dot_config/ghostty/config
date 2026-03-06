@@ -31,8 +31,8 @@ shell-integration-features = cursor,sudo,title
 
 # ── macOS ────────────────────────────────────────────────────────────────────
 
-# Left Option = Alt (needed for many terminal shortcuts, nvim, tmux)
-# Right Option = still types special chars (é, ü, etc.)
+# German keyboard: Left Option = Alt/Meta (tmux Alt+H/L, nvim shortcuts)
+#                  Right Option = macOS special chars (@=Opt+L, ~=Opt+N, {}[]| etc.)
 macos-option-as-alt = left
 
 # Use macOS native full screen (not the borderless overlay style)
