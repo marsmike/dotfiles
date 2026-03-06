@@ -201,9 +201,7 @@ autoload -U compinit && compinit
 export EDITOR='nvim'
 
 # Set PATH, MANPATH, etc., as needed
-if [[ -z $TMUX ]]; then
-   export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
-fi
+export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
