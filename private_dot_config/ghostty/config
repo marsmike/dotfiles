@@ -13,9 +13,8 @@ window-padding-y = 8
 # Keep padding balanced when terminal subdivides (splits etc.)
 window-padding-balance = true
 
-# Slightly translucent background (matches WezTerm's 30-blur feel)
-background-opacity = 0.95
-macos-window-shadow = true
+# Solid background — let Catppuccin Mocha colors shine
+background-opacity = 1
 
 # ── Cursor ───────────────────────────────────────────────────────────────────
 
