@@ -1,0 +1,24 @@
+#!/bin/bash
+# Chezmoi modify script: only manage extraKnownMarketplaces in settings.json
+# All other settings (plugins, statusLine, etc.) are per-machine and left untouched.
+
+MARKETPLACE='{
+  "mike-plugins": {
+    "source": {
+      "source": "github",
+      "repo": "marsmike/claude-plugins"
+    },
+    "autoUpdate": true
+  }
+}'
+
+# Read existing file from stdin (chezmoi pipes current contents)
+EXISTING="$(cat)"
+
+if [ -z "$EXISTING" ] || [ "$EXISTING" = "{}" ]; then
+  # No existing file — create minimal one with just the marketplace
+  echo "{}" | jq --argjson mp "$MARKETPLACE" '.extraKnownMarketplaces = $mp'
+else
+  # Merge marketplace into existing settings, preserving everything else
+  echo "$EXISTING" | jq --argjson mp "$MARKETPLACE" '.extraKnownMarketplaces = $mp'
+fi

@@ -224,3 +224,10 @@ eval "$(zoxide init zsh)"
 
 # direnv hook for auto-loading .env files
 eval "$(direnv hook zsh)"
+
+# bun completions
+[ -s "/Users/mike/.bun/_bun" ] && source "/Users/mike/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
