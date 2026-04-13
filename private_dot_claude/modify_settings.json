@@ -3,10 +3,10 @@
 # All other settings (plugins, statusLine, etc.) are per-machine and left untouched.
 
 MARKETPLACE='{
-  "mike-plugins": {
+  "agentic-toolkit": {
     "source": {
-      "source": "github",
-      "repo": "marsmike/claude-plugins"
+      "source": "git",
+      "url": "https://github.com/marsmike/agentic-toolkit.git"
     },
     "autoUpdate": true
   }
