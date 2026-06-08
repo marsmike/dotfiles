@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# claude-bg — spawn a DETACHED tmux session running Claude Code.
+#
+# Usage: claude-bg <name> [dir] [opus|sonnet|default]
+#   name    tmux session name (required)
+#   dir     working directory (default: $HOME/work; must already exist)
+#   model   opus | sonnet | default  (default: default)
+#
+# Idempotent: if a session <name> already exists, prints the attach hint
+# and exits 0 without clobbering it.
+set -euo pipefail
+
+usage() {
+  sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+  exit "${1:-0}"
+}
+
+[[ $# -lt 1 || "${1:-}" == "-h" || "${1:-}" == "--help" ]] && usage 0
+
+name="$1"
+dir="${2:-$HOME/work}"
+model="${3:-default}"
+
+tmux_bin="$(command -v tmux || true)"
+[[ -z "$tmux_bin" ]] && { echo "error: tmux not found on PATH (brew install tmux)" >&2; exit 1; }
+
+claude_bin="$(command -v claude || true)"
+[[ -z "$claude_bin" ]] && claude_bin="/opt/homebrew/bin/claude"
+[[ -x "$claude_bin" ]] || { echo "error: claude not found (looked on PATH and /opt/homebrew/bin/claude)" >&2; exit 1; }
+
+[[ -d "$dir" ]] || { echo "error: directory does not exist: $dir" >&2; exit 1; }
+
+case "$model" in
+  opus)    cmd="$claude_bin --model opus --dangerously-skip-permissions" ;;
+  sonnet)  cmd="$claude_bin --model sonnet --dangerously-skip-permissions" ;;
+  default) cmd="$claude_bin --dangerously-skip-permissions" ;;
+  *) echo "error: unknown model '$model' (use opus|sonnet|default)" >&2; exit 1 ;;
+esac
+
+attach_hints() {
+  echo "Attach:        tmux attach -t $name"
+  echo "Attach (GUI):  open -na Ghostty.app --args -e tmux attach -t $name"
+}
+
+if "$tmux_bin" has-session -t "$name" 2>/dev/null; then
+  echo "Session '$name' already running — not clobbering."
+  attach_hints
+  exit 0
+fi
+
+# remain-on-exit on: keep the pane (and its final output / error) visible if
+# claude exits, so you can read why instead of the window vanishing.
+"$tmux_bin" new-session -d -s "$name" -c "$dir" "$cmd"
+"$tmux_bin" set-option -t "$name" remain-on-exit on
+
+echo "Spawned tmux session '$name'"
+echo "  dir:    $dir"
+echo "  model:  $model"
+echo "  cmd:    $cmd"
+attach_hints

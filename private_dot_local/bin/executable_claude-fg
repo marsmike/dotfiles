@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# claude-fg — open a Ghostty window attached to a Claude tmux session.
+#
+# Usage: claude-fg <name>
+set -euo pipefail
+
+usage() {
+  sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'
+  exit "${1:-0}"
+}
+
+[[ $# -lt 1 || "${1:-}" == "-h" || "${1:-}" == "--help" ]] && usage 0
+
+name="$1"
+
+tmux_bin="$(command -v tmux || true)"
+[[ -z "$tmux_bin" ]] && { echo "error: tmux not found on PATH (brew install tmux)" >&2; exit 1; }
+
+if ! "$tmux_bin" has-session -t "$name" 2>/dev/null; then
+  echo "error: no tmux session named '$name'. Running sessions:" >&2
+  "$tmux_bin" ls 2>/dev/null >&2 || echo "  (none)" >&2
+  exit 1
+fi
+
+open -na Ghostty.app --args -e tmux attach -t "$name"
+echo "Opened Ghostty window attached to '$name'."

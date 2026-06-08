@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# claude-ls — list running tmux sessions (Claude launchers and others).
+#
+# Usage: claude-ls
+set -euo pipefail
+
+[[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && { sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
+
+tmux_bin="$(command -v tmux || true)"
+[[ -z "$tmux_bin" ]] && { echo "error: tmux not found on PATH (brew install tmux)" >&2; exit 1; }
+
+out="$("$tmux_bin" ls 2>&1)" || true
+if [[ "$out" == *"no server running"* || -z "$out" ]]; then
+  echo "No tmux sessions running."
+else
+  echo "$out"
+fi
