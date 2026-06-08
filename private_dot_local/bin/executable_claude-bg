@@ -1,25 +1,38 @@
 #!/usr/bin/env bash
 # claude-bg — spawn a DETACHED tmux session running Claude Code.
 #
-# Usage: claude-bg <name> [dir] [opus|sonnet|default]
-#   name    tmux session name (required)
-#   dir     working directory (default: $HOME/work; must already exist)
-#   model   opus | sonnet | default  (default: default)
+# Usage: claude-bg [--remote] <name> [dir] [opus|sonnet|default]
+#   name      tmux session name (required)
+#   dir       working directory (default: $HOME/work; must already exist)
+#   model     opus | sonnet | default  (default: default)
+#   --remote  after spawning, auto-enable Remote Control in the session
+#             (accepted anywhere in the args; requires a prior `claude /login`)
 #
 # Idempotent: if a session <name> already exists, prints the attach hint
 # and exits 0 without clobbering it.
 set -euo pipefail
 
 usage() {
-  sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
-[[ $# -lt 1 || "${1:-}" == "-h" || "${1:-}" == "--help" ]] && usage 0
+# --- arg parsing: pull out --remote (anywhere), keep positionals in order ---
+remote=0
+positionals=()
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) usage 0 ;;
+    --remote)  remote=1 ;;
+    *)         positionals+=("$arg") ;;
+  esac
+done
 
-name="$1"
-dir="${2:-$HOME/work}"
-model="${3:-default}"
+[[ ${#positionals[@]} -lt 1 ]] && usage 0
+
+name="${positionals[0]}"
+dir="${positionals[1]:-$HOME/work}"
+model="${positionals[2]:-default}"
 
 tmux_bin="$(command -v tmux || true)"
 [[ -z "$tmux_bin" ]] && { echo "error: tmux not found on PATH (brew install tmux)" >&2; exit 1; }
@@ -42,6 +55,57 @@ attach_hints() {
   echo "Attach (GUI):  open -na Ghostty.app --args -e tmux attach -t $name"
 }
 
+# pane() — current visible pane text for $name (never aborts the script).
+pane() {
+  "$tmux_bin" capture-pane -t "$name" -p -S -60 2>/dev/null || true
+}
+
+# wait_for_ready() — poll the pane until Claude shows its input prompt.
+# Accepts a one-time folder-trust prompt along the way. Returns 0 on ready,
+# 1 on timeout. Mirrors the agents script's capture-pane polling, simpler.
+wait_for_ready() {
+  local deadline=$(( SECONDS + 30 )) trusted=0 snap
+  while (( SECONDS < deadline )); do
+    snap="$(pane)"
+    # Folder-trust gate: accept once, then keep polling for the prompt.
+    if (( ! trusted )) && printf '%s' "$snap" | grep -qiE 'trust the files|Yes, I trust'; then
+      "$tmux_bin" send-keys -t "$name" Enter
+      trusted=1
+      sleep 2
+      continue
+    fi
+    # Normal input prompt is a lone ❯ — that means boot finished.
+    if printf '%s' "$snap" | grep -q '❯'; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+# enable_remote() — drive /remote-control and verify it connects.
+# Returns 0 if the pane reports Remote Control active/connected, else 1.
+enable_remote() {
+  "$tmux_bin" send-keys -t "$name" "/remote-control" C-m
+  sleep 3
+  # If a menu ("Enable Remote Control") is shown, Enter picks it. If it
+  # connected directly (already chosen before), Enter is a harmless empty
+  # submit at the prompt.
+  "$tmux_bin" send-keys -t "$name" Enter
+  local deadline=$(( SECONDS + 25 )) snap
+  while (( SECONDS < deadline )); do
+    snap="$(pane)"
+    if printf '%s' "$snap" | grep -qiE 'Remote Control active|Remote Control connected|Remote Control enabled'; then
+      return 0
+    fi
+    if printf '%s' "$snap" | grep -qiE 'Remote Control failed|failed to connect'; then
+      return 1
+    fi
+    sleep 1
+  done
+  return 1
+}
+
 if "$tmux_bin" has-session -t "$name" 2>/dev/null; then
   echo "Session '$name' already running — not clobbering."
   attach_hints
@@ -57,4 +121,20 @@ echo "Spawned tmux session '$name'"
 echo "  dir:    $dir"
 echo "  model:  $model"
 echo "  cmd:    $cmd"
+
+if (( remote )); then
+  echo "  remote: enabling Remote Control…"
+  if ! wait_for_ready; then
+    echo "  WARNING: session did not reach the input prompt within 30s." >&2
+    echo "  --- last pane ---" >&2
+    pane >&2
+  elif enable_remote; then
+    echo "  Remote Control: ENABLED (connected)"
+  else
+    echo "  WARNING: Remote Control did not confirm connection." >&2
+    echo "  --- last pane ---" >&2
+    pane >&2
+  fi
+fi
+
 attach_hints
