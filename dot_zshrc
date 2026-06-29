@@ -182,10 +182,10 @@ alias kns='kubectl config set-context --current --namespace'
 # Terraform shortcuts
 alias tf='terraform'
 
-# Claude Code with permissions bypassed
-alias cc='claude --dangerously-skip-permissions'
-# Claude Code with permissions bypassed, using Opus
-alias cco='claude --model opus --dangerously-skip-permissions'
+# Claude Code in auto mode, Sonnet 4.6 1M
+alias cc='claude --model claude-sonnet-4-6[1m] --permission-mode auto'
+# Claude Code in auto mode, Opus 4.8 1M
+alias cco='claude --model claude-opus-4-8[1m] --permission-mode auto'
 
 # Claude Code using Kimi K2 (credentials stored in ~/.kimi.env, managed by chezmoi)
 function ck() {
