@@ -186,6 +186,10 @@ alias tf='terraform'
 alias cc='claude --model claude-sonnet-4-6[1m] --permission-mode auto'
 # Claude Code in auto mode, Opus 4.8 1M
 alias cco='claude --model claude-opus-4-8[1m] --permission-mode auto'
+# Claude Code in auto mode, Haiku 4.5 (fastest / cheapest)
+alias cch='claude --model claude-haiku-4-5 --permission-mode auto'
+# Claude Code in auto mode, Fable 5 (extended thinking always on)
+alias ccf='claude --model claude-fable-5 --permission-mode auto'
 
 # Claude Code using Kimi K2 (credentials stored in ~/.kimi.env, managed by chezmoi)
 function ck() {
@@ -236,3 +240,21 @@ command -v direnv &>/dev/null && eval "$(direnv hook zsh)"
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+# Reference card for the claude shortcuts defined above
+function cchelp() {
+  cat <<'EOF'
+claude shortcuts:
+  cc    sonnet 4.6 1M  (auto perms)        - default everyday driver
+  cco   opus 4.8 1M    (auto perms)        - heavier reasoning
+  cch   haiku 4.5      (auto perms)        - fastest / cheapest
+  ccf   fable 5        (auto perms)        - extended thinking always on
+  ck    kimi K2                            - via ~/.kimi.env
+  ckt   kimi K2 + thinking (31999 tokens)  - via ~/.kimi.env
+EOF
+}
+
+# One-line hint on shell start (suppress with: export CC_HINT_QUIET=1)
+if [[ -o interactive && -z "${CC_HINT_QUIET:-}" ]]; then
+  print -P "%F{244}claude: cc·cco·cch·ccf·ck·ckt  (run %F{109}cchelp%F{244} for details)%f"
+fi
