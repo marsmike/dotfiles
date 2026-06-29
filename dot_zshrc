@@ -185,8 +185,11 @@ alias tf='terraform'
 # Claude Code in auto mode, latest Sonnet with 1M context
 # (quote the model: zsh would otherwise glob the [1m] bracket expression)
 alias cc='claude --model "sonnet[1m]" --permission-mode auto'
-# Claude Code in auto mode, latest Opus with 1M context
-alias cco='claude --model "opus[1m]" --permission-mode auto'
+# Claude Code in auto mode, Opus 4.8 with 1M context
+# (pinned explicitly: the `opus` short alias is gated to 4.7 until 2026-07-25
+# by Anthropic's tengu_sunset_penguin_opus47 rollout flag. Revert to "opus[1m]"
+# after that date if you want auto-tracking again.)
+alias cco='claude --model "claude-opus-4-8[1m]" --permission-mode auto'
 # Claude Code in auto mode, latest Haiku (fastest / cheapest)
 alias cch='claude --model haiku --permission-mode auto'
 # Claude Code in auto mode, latest Fable (extended thinking always on)
@@ -259,3 +262,7 @@ EOF
 if [[ -o interactive && -z "${CC_HINT_QUIET:-}" ]]; then
   print -P "%F{244}claude: cc·cco·cch·ccf·ck·ckt  (run %F{109}cchelp%F{244} for details)%f"
 fi
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/Users/mike/.lmstudio/bin"
+# End of LM Studio CLI section
