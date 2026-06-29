@@ -183,9 +183,10 @@ alias kns='kubectl config set-context --current --namespace'
 alias tf='terraform'
 
 # Claude Code in auto mode, latest Sonnet with 1M context
-alias cc='claude --model sonnet[1m] --permission-mode auto'
+# (quote the model: zsh would otherwise glob the [1m] bracket expression)
+alias cc='claude --model "sonnet[1m]" --permission-mode auto'
 # Claude Code in auto mode, latest Opus with 1M context
-alias cco='claude --model opus[1m] --permission-mode auto'
+alias cco='claude --model "opus[1m]" --permission-mode auto'
 # Claude Code in auto mode, latest Haiku (fastest / cheapest)
 alias cch='claude --model haiku --permission-mode auto'
 # Claude Code in auto mode, latest Fable (extended thinking always on)
