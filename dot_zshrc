@@ -195,15 +195,68 @@ alias cch='claude --model haiku --permission-mode auto'
 # Claude Code in auto mode, latest Fable (extended thinking always on)
 alias ccf='claude --model fable --permission-mode auto'
 
-# Claude Code using Kimi K2 (credentials stored in ~/.kimi.env, managed by chezmoi)
-function ck() {
-  (source ~/.kimi.env && claude --dangerously-skip-permissions "$@")
+# Claude Code OAuth token created by `claude setup-token`, stored in Keychain.
+if [[ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]]; then
+  _claude_code_oauth_token="$(security find-generic-password -a "$USER" -s claude-code-oauth-token -w 2>/dev/null)"
+  if [[ -n "$_claude_code_oauth_token" ]]; then
+    export CLAUDE_CODE_OAUTH_TOKEN="$_claude_code_oauth_token"
+  fi
+  unset _claude_code_oauth_token
+fi
+
+# Claude Code routed through local MLX backend via Rapid-MLX (native Anthropic endpoint)
+# Daemon: ~/Library/LaunchAgents/com.mike.rapidmlx.plist (port 8000)
+# Backend: Rapid-MLX serving mlx-community/Ornith-1.0-35B-{4,5,8}bit with --no-thinking
+# Usage:
+#   cclm            run against whatever quant the daemon currently has loaded
+#   cclm 5bit       hot-swap daemon to Ornith-1.0-35B-5bit if needed, then run
+#   cclm 4bit       same for -4bit
+#   cclm 8bit       same for -8bit
+# The bare number form ("cclm 5") also works and is treated as "5bit".
+function cclm() {
+  local plist=~/Library/LaunchAgents/com.mike.rapidmlx.plist
+  # Only treat $1 as a quant selector if it matches Nbit / N-digit form.
+  # Anything else (a claude arg like "-c", "--help", or a raw prompt) is
+  # passed straight through to claude so the bare passthrough interface
+  # stays intact.
+  if [[ "$1" =~ ^[0-9]+(bit)?$ ]]; then
+    local requested="${1%bit}bit"
+    local target_id="mlx-community/Ornith-1.0-35B-${requested}"
+    local current_id
+    current_id=$(grep -oE 'mlx-community/Ornith-1.0-35B-[0-9]+bit' "$plist")
+    if [[ "$current_id" != "$target_id" ]]; then
+      print -u2 -P "%F{109}cclm: swapping backend ${current_id} -> ${target_id} ...%f"
+      sed -i '' "s|mlx-community/Ornith-1.0-35B-[0-9]*bit|$target_id|" "$plist"
+      launchctl bootout gui/$(id -u) "$plist" 2>/dev/null
+      launchctl bootstrap gui/$(id -u) "$plist" || {
+        print -u2 -P "%F{160}cclm: launchctl bootstrap failed%f"; return 1;
+      }
+      local i
+      for i in {1..30}; do
+        curl -s --max-time 2 -H "Authorization: Bearer sk-rapidmlx-local" \
+          http://127.0.0.1:8000/v1/models >/dev/null 2>&1 && break
+        sleep 1
+      done
+      if [[ $i -eq 30 ]]; then
+        print -u2 -P "%F{160}cclm: server did not become healthy within 30s — check ~/Library/Logs/rapidmlx/rapidmlx.err.log%f"
+        return 1
+      fi
+      print -u2 -P "%F{109}cclm: ${target_id} ready%f"
+    fi
+    (source ~/.ornith.env \
+      && export ANTHROPIC_MODEL="$target_id" \
+                ANTHROPIC_SMALL_FAST_MODEL="$target_id" \
+                CLAUDE_CODE_SUBAGENT_MODEL="$target_id" \
+      && claude --permission-mode auto "${@:2}")
+  else
+    (source ~/.ornith.env && claude --permission-mode auto "$@")
+  fi
 }
 
-# Claude Code using Kimi K2 with extended thinking mode enabled
-# MAX_THINKING_TOKENS controls the reasoning budget (default max: 31999)
-function ckt() {
-  (source ~/.kimi.env && MAX_THINKING_TOKENS=31999 claude --dangerously-skip-permissions "$@")
+# Claude Code routed through the F3A homelab box (Ornith-1.0-35B Q6_K-MTP, 35.9 t/s)
+# Gateway: llama.cpp native Anthropic /v1/messages via llama-swap @ 192.168.1.154:8080
+function cclmf3a() {
+  (source ~/.ornith-f3a.env && claude --permission-mode auto "$@")
 }
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
@@ -253,15 +306,19 @@ claude shortcuts (always latest model version in each family):
   cco   opus 1M    (auto perms)            - heavier reasoning
   cch   haiku      (auto perms)            - fastest / cheapest
   ccf   fable      (auto perms)            - extended thinking always on
-  ck    kimi K2                            - via ~/.kimi.env
-  ckt   kimi K2 + thinking (31999 tokens)  - via ~/.kimi.env
+  cclm [Nbit] Ornith-35B via Rapid-MLX     - local MLX @ localhost:8000; arg 4bit/5bit/8bit hot-swaps
+  cclmf3a Ornith-35B Q6_K-MTP (35.9 t/s)   - F3A homelab gateway @ 192.168.1.154:8080
 EOF
 }
 
 # One-line hint on shell start (suppress with: export CC_HINT_QUIET=1)
 if [[ -o interactive && -z "${CC_HINT_QUIET:-}" ]]; then
-  print -P "%F{244}claude: cc·cco·cch·ccf·ck·ckt  (run %F{109}cchelp%F{244} for details)%f"
+  print -P "%F{244}claude: cc·cco·cch·ccf·cclm·cclmf3a  (run %F{109}cchelp%F{244} for details)%f"
 fi
+
+# HuggingFace cache lives on the 4TB home volume under ~/models/huggingface
+# (single canonical location for MLX / GGUF weights, mlx-community downloads, etc.)
+export HF_HOME="$HOME/models/huggingface"
 
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:/Users/mike/.lmstudio/bin"
