@@ -180,9 +180,11 @@ alias kns='kubectl config set-context --current --namespace'
 # Terraform shortcuts
 alias tf='terraform'
 
-# Claude Code in auto mode, latest Sonnet with 1M context
-# (quote the model: zsh would otherwise glob the [1m] bracket expression)
-alias cc='claude --model "sonnet[1m]" --permission-mode auto'
+# Claude Code in auto mode, Sonnet 5 with 1M context
+# (pinned explicitly: the `sonnet` short alias is still gated to 4.6 by
+# Anthropic's rollout flag, same story as opus below. Revert to "sonnet[1m]"
+# once the gate lifts if you want auto-tracking again.)
+alias cc='claude --model "claude-sonnet-5[1m]" --permission-mode auto'
 # Claude Code in auto mode, Opus 4.8 with 1M context
 # (pinned explicitly: the `opus` short alias is gated to 4.7 until 2026-07-25
 # by Anthropic's tengu_sunset_penguin_opus47 rollout flag. Revert to "opus[1m]"
