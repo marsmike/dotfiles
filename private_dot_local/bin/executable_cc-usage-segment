@@ -11,9 +11,11 @@
 # ccstatusline pipes the Claude Code payload on stdin; ccusage statusline
 # expects that same payload, so it is captured and forwarded unchanged.
 #
-# --no-offline uses live pricing. Embedded offline pricing has lagged on newer
-# models (it silently excluded opus-5); pricing is cached locally, so the live
-# path costs no extra latency.
+# --no-offline uses live pricing. ccusage ships embedded pricing that lags new
+# model releases: on 2026-07-24, hours after opus-5 shipped, offline silently
+# dropped it and reported $13.52 for the day against $48.30 online. Embedded
+# data will catch up for opus-5, but the lag recurs with every new model, and
+# pricing is cached locally, so the live path costs no extra latency.
 #
 # Fails silently: a status line segment must never emit errors or hang.
 
