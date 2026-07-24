@@ -89,6 +89,18 @@
         "rawValue": true,
         "color": "brightBlack",
         "id": "16"
+      },
+      {
+        "id": "36",
+        "type": "separator"
+      },
+      {
+        "id": "37",
+        "type": "custom-command",
+        "commandPath": "/Users/mike/.local/bin/cc-usage-segment",
+        "color": "brightBlack",
+        "timeout": 800,
+        "maxWidth": 32
       }
     ],
     [

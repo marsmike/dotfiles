@@ -1,0 +1,63 @@
+#!/bin/bash
+# ccstatusline custom-command segment: today's spend + burn rate, from ccusage.
+#
+# Stale-while-revalidate. Calling ccusage inline cost ~170ms inside the
+# ccstatusline process, pushing a full render to ~440ms — past Claude Code's
+# 300ms debounce, where in-flight status line scripts get cancelled. So this
+# prints a cached value immediately and refreshes detached in the background.
+# Worst case the numbers lag one refresh interval, which is irrelevant for a
+# figure denominated in dollars per hour.
+#
+# ccstatusline pipes the Claude Code payload on stdin; ccusage statusline
+# expects that same payload, so it is captured and forwarded unchanged.
+#
+# --no-offline uses live pricing. Embedded offline pricing has lagged on newer
+# models (it silently excluded opus-5); pricing is cached locally, so the live
+# path costs no extra latency.
+#
+# Fails silently: a status line segment must never emit errors or hang.
+
+CACHE_DIR="$HOME/.cache"
+CACHE="$CACHE_DIR/cc-usage-segment"
+MAX_AGE=30
+
+# Always drain stdin, even on the paths that exit early, so the parent's
+# write never blocks on a full pipe buffer.
+payload="$(cat)"
+
+# Serve whatever we have, immediately.
+[ -f "$CACHE" ] && cat "$CACHE"
+
+age=999999
+if [ -f "$CACHE" ]; then
+    mtime="$(stat -f %m "$CACHE" 2>/dev/null || echo 0)"
+    age=$(( $(date +%s) - mtime ))
+fi
+[ "$age" -ge "$MAX_AGE" ] || exit 0
+
+CCUSAGE="$(command -v ccusage 2>/dev/null)"
+[ -n "$CCUSAGE" ] || CCUSAGE="$HOME/.bun/bin/ccusage"
+[ -x "$CCUSAGE" ] || exit 0
+
+# Detached refresh. Redirecting all three streams and </dev/null keeps this
+# from holding the parent's pipes open, which would stall ccstatusline.
+(
+    mkdir -p "$CACHE_DIR" 2>/dev/null
+    out="$(printf '%s' "$payload" | "$CCUSAGE" statusline --no-offline 2>/dev/null)" || exit 0
+    [ -n "$out" ] || exit 0
+
+    # "… / $13.52 today / …"  →  13.52
+    today="$(printf '%s' "$out" | sed -n 's|.*/ \$\([0-9][0-9.]*\) today.*|\1|p')"
+    # "… 🔥 $6.85/hr …"       →  6.85
+    burn="$(printf '%s' "$out" | sed -n 's|.*\$\([0-9][0-9.]*\)/hr.*|\1|p')"
+
+    seg=""
+    [ -n "$today" ] && seg="today \$$today"
+    [ -n "$burn" ] && seg="${seg:+$seg }burn \$$burn/hr"
+    [ -n "$seg" ] || exit 0
+
+    # Write-then-rename so a concurrent read never sees a half-written file.
+    printf '%s' "$seg" > "$CACHE.$$.tmp" 2>/dev/null && mv -f "$CACHE.$$.tmp" "$CACHE" 2>/dev/null
+) >/dev/null 2>&1 </dev/null &
+
+exit 0
