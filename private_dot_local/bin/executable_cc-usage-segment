@@ -45,6 +45,18 @@ CCUSAGE="$(command -v ccusage 2>/dev/null)"
 # from holding the parent's pipes open, which would stall ccstatusline.
 (
     mkdir -p "$CACHE_DIR" 2>/dev/null
+
+    # Hand the payload to claude-monitor if present. Its --statusline mode
+    # captures the official rate_limits the payload carries and caches them in
+    # ~/.claude-monitor/statusline/latest.json, so the TUI (ccm) reports real
+    # server limits instead of estimating them from P90 usage history. Output
+    # is discarded — this runs purely for the capture side effect, and only
+    # here in the background, since it costs ~107ms.
+    CLAUDE_MONITOR="$(command -v claude-monitor 2>/dev/null)"
+    if [ -n "$CLAUDE_MONITOR" ] && [ -x "$CLAUDE_MONITOR" ]; then
+        printf '%s' "$payload" | "$CLAUDE_MONITOR" --statusline >/dev/null 2>&1
+    fi
+
     out="$(printf '%s' "$payload" | "$CCUSAGE" statusline --no-offline 2>/dev/null)" || exit 0
     [ -n "$out" ] || exit 0
 
