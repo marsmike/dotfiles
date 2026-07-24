@@ -31,7 +31,21 @@ for tool in $TOOLS; do
     fi
     echo "install-uv-tools: installing $tool" >&2
     uv tool install "$tool" >/dev/null 2>&1 \
-        || echo "install-uv-tools: FAILED to install $tool" >&2
+        || { echo "install-uv-tools: FAILED to install $tool" >&2; continue; }
+
+    # claude-monitor persists the last-used flags to
+    # ~/.claude-monitor/last_used.json, so a single seeding run makes the plan
+    # stick. Without it a fresh machine defaults to --plan custom, which
+    # derives limits from P90 of past usage — on a new machine there is no
+    # history to derive from.
+    #
+    # Note the plan only sets the denominators claude-monitor displays, and
+    # those are hardcoded constants that lag Anthropic's actual limits. The
+    # trustworthy number is the "(official)" one, captured from the Claude
+    # Code payload by cc-usage-segment.
+    if [ "$tool" = "claude-monitor" ]; then
+        claude-monitor --plan max20 --once --no-clear >/dev/null 2>&1 || true
+    fi
 done
 
 exit 0
