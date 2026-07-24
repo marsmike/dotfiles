@@ -3,7 +3,9 @@
 
 # ── Appearance ───────────────────────────────────────────────────────────────
 
-theme = Catppuccin Mocha
+# Follows macOS Appearance: Flexoki Light in Light mode, Mocha HC in Dark mode
+# "Catppuccin Mocha HC" is a custom higher-contrast Mocha in ./themes/
+theme = light:Flexoki Light,dark:Catppuccin Mocha HC
 font-family = MesloLGS NF
 font-size = 16
 
@@ -42,6 +44,9 @@ confirm-close-surface = false
 
 # Quit the app when the last window closes
 quit-after-last-window-closed = true
+
+# Restore previous windows/tabs (and their working dirs) on relaunch
+window-save-state = always
 
 # ── Keybindings ──────────────────────────────────────────────────────────────
 
