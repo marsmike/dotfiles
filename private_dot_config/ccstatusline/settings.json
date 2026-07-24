@@ -1,0 +1,242 @@
+{
+  "version": 3,
+  "lines": [
+    [
+      {
+        "type": "model",
+        "rawValue": true,
+        "color": "cyan",
+        "bold": true,
+        "id": "1"
+      },
+      {
+        "type": "separator",
+        "id": "2"
+      },
+      {
+        "type": "custom-text",
+        "customText": "effort ",
+        "color": "brightBlack",
+        "merge": "no-padding",
+        "id": "3"
+      },
+      {
+        "type": "thinking-effort",
+        "rawValue": true,
+        "color": "magenta",
+        "id": "4"
+      },
+      {
+        "type": "separator",
+        "id": "5"
+      },
+      {
+        "type": "git-root-dir",
+        "rawValue": true,
+        "color": "blue",
+        "id": "6"
+      },
+      {
+        "type": "separator",
+        "id": "7"
+      },
+      {
+        "type": "custom-text",
+        "customText": "\u2387 ",
+        "color": "brightBlack",
+        "merge": "no-padding",
+        "id": "8"
+      },
+      {
+        "type": "git-branch",
+        "rawValue": true,
+        "color": "blue",
+        "id": "9"
+      },
+      {
+        "type": "separator",
+        "id": "10"
+      },
+      {
+        "type": "custom-text",
+        "customText": "@",
+        "color": "brightBlack",
+        "merge": "no-padding",
+        "id": "11"
+      },
+      {
+        "type": "git-sha",
+        "rawValue": true,
+        "color": "brightBlack",
+        "id": "12"
+      },
+      {
+        "type": "separator",
+        "id": "13"
+      },
+      {
+        "type": "git-changes",
+        "rawValue": true,
+        "color": "yellow",
+        "id": "14"
+      },
+      {
+        "type": "separator",
+        "id": "15"
+      },
+      {
+        "type": "git-pr",
+        "rawValue": true,
+        "color": "brightBlack",
+        "id": "16"
+      }
+    ],
+    [
+      {
+        "type": "custom-text",
+        "customText": "context ",
+        "color": "brightBlack",
+        "merge": "no-padding",
+        "id": "17"
+      },
+      {
+        "type": "context-percentage",
+        "rawValue": true,
+        "metadata": {
+          "display": "slider"
+        },
+        "color": "green",
+        "id": "18"
+      },
+      {
+        "type": "custom-text",
+        "customText": " (",
+        "color": "brightBlack",
+        "merge": "no-padding",
+        "id": "19"
+      },
+      {
+        "type": "context-percentage-usable",
+        "rawValue": true,
+        "color": "brightGreen",
+        "id": "20"
+      },
+      {
+        "type": "custom-text",
+        "customText": " of usable)",
+        "color": "brightBlack",
+        "merge": "no-padding",
+        "id": "21"
+      },
+      {
+        "type": "separator",
+        "id": "22"
+      },
+      {
+        "type": "custom-text",
+        "customText": "cache hit ",
+        "color": "brightBlack",
+        "merge": "no-padding",
+        "id": "23"
+      },
+      {
+        "type": "cache-hit-rate",
+        "rawValue": true,
+        "color": "cyan",
+        "id": "24"
+      },
+      {
+        "type": "separator",
+        "id": "25"
+      },
+      {
+        "type": "custom-text",
+        "customText": "5h limit ",
+        "color": "brightBlack",
+        "merge": "no-padding",
+        "id": "26"
+      },
+      {
+        "type": "session-usage",
+        "rawValue": true,
+        "metadata": {
+          "display": "slider"
+        },
+        "color": "yellow",
+        "id": "27"
+      },
+      {
+        "type": "custom-text",
+        "customText": " resets ",
+        "color": "brightBlack",
+        "merge": "no-padding",
+        "id": "28"
+      },
+      {
+        "type": "reset-timer",
+        "rawValue": true,
+        "color": "brightBlack",
+        "id": "29"
+      },
+      {
+        "type": "separator",
+        "id": "30"
+      },
+      {
+        "type": "custom-text",
+        "customText": "7d limit ",
+        "color": "brightBlack",
+        "merge": "no-padding",
+        "id": "31"
+      },
+      {
+        "type": "weekly-usage",
+        "rawValue": true,
+        "metadata": {
+          "display": "slider"
+        },
+        "color": "yellow",
+        "id": "32"
+      },
+      {
+        "type": "separator",
+        "id": "33"
+      },
+      {
+        "type": "custom-text",
+        "customText": "cost ",
+        "color": "brightBlack",
+        "merge": "no-padding",
+        "id": "34"
+      },
+      {
+        "type": "session-cost",
+        "rawValue": true,
+        "color": "green",
+        "id": "35"
+      }
+    ],
+    []
+  ],
+  "flexMode": "full",
+  "compactThreshold": 60,
+  "colorLevel": 3,
+  "defaultPaddingSide": "both",
+  "inheritSeparatorColors": false,
+  "globalBold": false,
+  "gitCacheTtlSeconds": 5,
+  "minimalistMode": false,
+  "powerline": {
+    "enabled": false,
+    "separators": [
+      ""
+    ],
+    "separatorInvertBackground": [
+      false
+    ],
+    "startCaps": [],
+    "endCaps": [],
+    "autoAlign": false,
+    "continueThemeAcrossLines": false
+  }
+}

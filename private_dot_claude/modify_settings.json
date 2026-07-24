@@ -1,29 +1,31 @@
 #!/bin/bash
-# Chezmoi modify script: only manage extraKnownMarketplaces in settings.json
-# All other settings (plugins, statusLine, etc.) are per-machine and left untouched.
+# Chezmoi modify script: manage the statusLine block in ~/.claude/settings.json.
+# Everything else (enabledPlugins, hooks, tui, …) is per-machine and passed
+# through untouched.
+#
+# extraKnownMarketplaces is actively removed — no longer used.
+#
+# Status line: ccstatusline (https://github.com/sirmalloc/ccstatusline).
+# Layout lives in ~/.config/ccstatusline/settings.json, also managed by chezmoi.
+# An absolute command path is required: the status line runs in a spawned shell
+# that does not reliably inherit PATH.
 
-MARKETPLACES='{
-  "agentic-toolkit-private": {
-    "source": {
-      "source": "git",
-      "url": "https://github.com/marsmike/agentic-toolkit-private.git"
-    },
-    "autoUpdate": true
-  },
-  "agentic-toolkit": {
-    "source": {
-      "source": "git",
-      "url": "https://github.com/marsmike/agentic-toolkit.git"
-    },
-    "autoUpdate": true
-  }
-}'
+CCSTATUSLINE="$(command -v ccstatusline 2>/dev/null)"
+[ -n "$CCSTATUSLINE" ] || CCSTATUSLINE="$HOME/.bun/bin/ccstatusline"
+
+# refreshInterval keeps the 5h reset countdown ticking while the session is
+# idle waiting on background subagents; event-driven updates alone go quiet.
+STATUSLINE="$(jq -n --arg cmd "$CCSTATUSLINE" '{
+  type: "command",
+  command: $cmd,
+  refreshInterval: 15
+}')"
 
 # Read existing file from stdin (chezmoi pipes current contents)
 EXISTING="$(cat)"
+[ -n "$EXISTING" ] || EXISTING='{}'
 
-if [ -z "$EXISTING" ] || [ "$EXISTING" = "{}" ]; then
-  echo "{}" | jq --argjson mp "$MARKETPLACES" '.extraKnownMarketplaces = $mp'
-else
-  echo "$EXISTING" | jq --argjson mp "$MARKETPLACES" '.extraKnownMarketplaces = $mp'
-fi
+echo "$EXISTING" | jq --argjson sl "$STATUSLINE" '
+    .statusLine = $sl
+  | del(.extraKnownMarketplaces)
+'
