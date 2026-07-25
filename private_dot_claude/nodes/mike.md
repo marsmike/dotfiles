@@ -14,9 +14,8 @@ AI Software Enabler and Betriebsrat at BSH. Email `muemike@gmail.com`, calendar
 
 ## `~/Developer` conventions
 
-Third-party clones are not kept locally — re-clone when needed. Repos whose remote is renamed
-or deleted get archived to the NAS and leave daily sync. When unsure about a repo's fate, ask
-rather than deciding.
+`~/Developer/CLAUDE.md` holds them, and loads automatically for any session under that folder.
+Do not restate its rules here.
 
 ## The Companion owl
 
