@@ -180,20 +180,53 @@ alias kns='kubectl config set-context --current --namespace'
 # Terraform shortcuts
 alias tf='terraform'
 
-# Claude Code in auto mode, Sonnet 5 with 1M context
-# (pinned explicitly: the `sonnet` short alias is still gated to 4.6 by
-# Anthropic's rollout flag, same story as opus below. Revert to "sonnet[1m]"
-# once the gate lifts if you want auto-tracking again.)
-alias cc='claude --model "claude-sonnet-5[1m]" --permission-mode auto'
-# Claude Code in auto mode, Opus 4.8 with 1M context
-# (pinned explicitly: the `opus` short alias is gated to 4.7 until 2026-07-25
-# by Anthropic's tengu_sunset_penguin_opus47 rollout flag. Revert to "opus[1m]"
-# after that date if you want auto-tracking again.)
-alias cco='claude --model "claude-opus-4-8[1m]" --permission-mode auto'
-# Claude Code in auto mode, latest Haiku (fastest / cheapest)
-alias cch='claude --model haiku --permission-mode auto'
-# Claude Code in auto mode, latest Fable (extended thinking always on)
-alias ccf='claude --model fable --permission-mode auto'
+# Claude Code launchers: auto mode, explicit model version, own git worktree.
+#
+# Models are pinned to explicit versioned ids on purpose. The bare `opus` /
+# `sonnet` aliases have repeatedly lagged a generation behind during staged
+# rollouts, and a --model flag here overrides ANTHROPIC_DEFAULT_*_MODEL from
+# ~/.env anyway. Bump by hand each release; last bumped 2026-07-26 (Opus 5).
+#
+# Worktree isolation is the default (see ~/.claude/nodes/parallel-agents.md):
+#   cco                     -> worktree <repo>-<YYYYmmdd-HHMM>
+#   cco -w fix-auth         -> worktree "fix-auth"
+#   cco --no-wt             -> current checkout, no worktree (read-only work)
+#   cco "fix the bug"       -> prompt still passes through untouched
+# Outside a git repo the worktree step is skipped automatically.
+function _cc() {
+  local model="$1"; shift
+  local name="" skip=0
+  local -a args
+  while (( $# )); do
+    case "$1" in
+      --no-wt) skip=1; shift ;;
+      -w|--worktree)
+        shift
+        if [[ -n "$1" && "$1" != -* ]]; then name="$1"; shift; fi
+        ;;
+      *) args+=("$1"); shift ;;
+    esac
+  done
+
+  local -a model_flag
+  [[ -n "$model" ]] && model_flag=(--model "$model")
+
+  if (( skip )) || ! git rev-parse --show-toplevel >/dev/null 2>&1; then
+    claude "${model_flag[@]}" --permission-mode auto "${args[@]}"
+    return
+  fi
+
+  if [[ -z "$name" ]]; then
+    name="$(basename "$(git rev-parse --show-toplevel)")-$(date +%Y%m%d-%H%M)"
+  fi
+  print -u2 -P "%F{109}worktree: ${name}%f"
+  claude "${model_flag[@]}" --worktree "$name" --permission-mode auto "${args[@]}"
+}
+
+alias cc='_cc "claude-sonnet-5[1m]"'          # Sonnet 5, 1M context — everyday driver
+alias cco='_cc "claude-opus-5[1m]"'           # Opus 5, 1M context — heavier reasoning
+alias cch='_cc "claude-haiku-4-5-20251001"'   # Haiku 4.5 — fastest / cheapest
+alias ccf='_cc "claude-fable-5[1m]"'          # Fable 5 — thinking always on
 
 # Claude Code OAuth token created by `claude setup-token`, stored in Keychain.
 if [[ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]]; then
@@ -259,6 +292,16 @@ function cclmf3a() {
   (source ~/.ornith-f3a.env && claude --permission-mode auto "$@")
 }
 
+# Claude Code routed through Kimi / Moonshot (Anthropic-compatible endpoint)
+# Docs:  https://platform.kimi.ai/docs/guide/claude-code-kimi
+# Creds: ~/.kimi.env (chezmoi: private_dot_kimi.env.tmpl, key from KIMI_ANTHROPIC_AUTH_TOKEN)
+# Models: kimi-k3 (default, thinking on) · kimi-k2.7-code · kimi-k2.7-code-highspeed · kimi-k2.6
+# Override per run:  KIMI_MODEL=kimi-k2.7-code-highspeed cck
+# Takes the same -w / --no-wt worktree flags as cc/cco/cch/ccf.
+function cck() {
+  (source ~/.kimi.env && _cc "${KIMI_MODEL:-kimi-k3}" "$@")
+}
+
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
@@ -301,19 +344,27 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # Reference card for the claude shortcuts defined above
 function cchelp() {
   cat <<'EOF'
-claude shortcuts (always latest model version in each family):
-  cc    sonnet 1M  (auto perms)            - default everyday driver
-  cco   opus 1M    (auto perms)            - heavier reasoning
-  cch   haiku      (auto perms)            - fastest / cheapest
-  ccf   fable      (auto perms)            - extended thinking always on
+claude shortcuts (model versions pinned explicitly — bump them at each release):
+  cc    sonnet-5   1M (auto perms)         - default everyday driver
+  cco   opus-5     1M (auto perms)         - heavier reasoning
+  cch   haiku-4.5     (auto perms)         - fastest / cheapest
+  ccf   fable-5    1M (auto perms)         - extended thinking always on
+  cck   kimi-k3       (auto perms)         - Kimi/Moonshot; KIMI_MODEL=... to switch
   cclm [Nbit] Ornith-35B via Rapid-MLX     - local MLX @ localhost:8000; arg 4bit/5bit/8bit hot-swaps
   cclmf3a Ornith-35B Q6_K-MTP (35.9 t/s)   - F3A homelab gateway @ 192.168.1.154:8080
+
+All of the above run in their own git worktree by default:
+  <cmd>                  -> worktree named <repo>-<YYYYmmdd-HHMM>
+  <cmd> -w <name>        -> worktree named <name>
+  <cmd> --no-wt          -> stay in the current checkout (read-only work)
+  git worktree list      -> see what has accumulated;  git worktree prune
 EOF
 }
 
 # One-line hint on shell start (suppress with: export CC_HINT_QUIET=1)
 if [[ -o interactive && -z "${CC_HINT_QUIET:-}" ]]; then
-  print -P "%F{244}claude: cc·cco·cch·ccf·cclm·cclmf3a  (run %F{109}cchelp%F{244} for details)%f"
+  # -u2: stderr, so the hint never corrupts piped/captured stdout
+  print -u2 -P "%F{244}claude: cc·cco·cch·ccf·cck·cclm·cclmf3a  — worktree by default, --no-wt to opt out  (run %F{109}cchelp%F{244} for details)%f"
 fi
 
 # HuggingFace cache lives on the 4TB home volume under ~/models/huggingface
