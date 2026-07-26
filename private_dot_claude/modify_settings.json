@@ -25,7 +25,31 @@ STATUSLINE="$(jq -n --arg cmd "$CCSTATUSLINE" '{
 EXISTING="$(cat)"
 [ -n "$EXISTING" ] || EXISTING='{}'
 
-echo "$EXISTING" | jq --argjson sl "$STATUSLINE" '
+# vault-guard: PreToolUse hook making deletes inside the Obsidian vault
+# recoverable (rm -> trash). The vault stays writable — it is the memory
+# substrate — so only the irreversible op is gated. Added idempotently to the
+# Bash matcher, alongside whatever else that matcher already runs (rtk).
+GUARD="$(jq -n --arg cmd "python3 '$HOME/.claude/hooks/vault-guard.sh'" '{
+  type: "command",
+  command: $cmd,
+  timeout: 10
+}')"
+
+echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" '
     .statusLine = $sl
   | del(.extraKnownMarketplaces)
+  | .hooks.PreToolUse = (
+      (.hooks.PreToolUse // [])
+      | if any(.[]; .matcher == "Bash") then
+          map(
+            if .matcher == "Bash" then
+              .hooks = (
+                (.hooks // [])
+                | if any(.[]; (.command // "") | test("vault-guard"))
+                  then . else . + [$guard] end
+              )
+            else . end
+          )
+        else . + [{matcher: "Bash", hooks: [$guard]}] end
+    )
 '
