@@ -1,38 +1,34 @@
 # Config is executable behavior
 
-CLAUDE.md files, skills, hooks, and memory are not documentation. **Humans skim stale docs;
-agents obey stale instructions.** Stronger models make this worse, not better — they execute
-outdated rules more faithfully.
+CLAUDE.md files, skills, hooks and memory are not documentation. **Humans skim stale docs;
+agents obey stale instructions** — and stronger models execute outdated rules *more* faithfully.
 
-## Maintenance rules
+## Deleting beats adding
 
-- Temporary rules carry a **removal condition in the line itself**. No open-ended workarounds.
-  The canonical failure is a "remove after migration" note that outlives its migration by
-  months because nobody owned it.
+Anthropic removed **>80% of Claude Code's system prompt** for Opus 5 / Fable 5 with no
+measurable eval loss. A constraint written for a weaker model doesn't go dormant when the model
+improves; it becomes a *conflicting* instruction the model spends reasoning to reconcile.
+
+So: **spend the tokens on gotchas** — the surprising, the load-bearing, the things that
+contradict what the filesystem implies. Cut anything a capable model would infer from context.
+`/doctor` runs this pass automatically.
+
+The budget is **instruction slots, shared across every tier at once** — roughly 100–150 after
+the system prompt's own ~50 — and adherence degrades uniformly, so a stale rule you don't care
+about taxes the rule you do. Adding to the router should displace something.
+
+## Maintenance
+
+- Temporary rules carry a **removal condition in the line itself**. The canonical failure is a
+  "remove after migration" note that outlives its migration by months because nobody owned it.
 - **Prefer a hook or skill over a text rule when enforcement matters.** A rule sits inert until
-  the model happens to weight it; a skill fires at a specific decision point, and a hook fires
-  whether the model cooperates or not.
-- **Re-audit after every model upgrade.** A guardrail written for a weaker model becomes noise,
-  and conflicting instructions cost more than the worst case they were added to prevent.
-- Before adding a rule, check whether a skill already enforces it structurally. If so, the rule
-  is redundant and competes for attention with everything else.
-
-## The line budget
-
-Instruction-following degrades **uniformly, not selectively** — past a threshold the model
-gets slightly less reliable at everything, including the rules you care most about. It does
-not triage and drop the least important first.
-
-Target **under 60 lines** for any CLAUDE.md. The global one is a router precisely so it can
-stay far under that; content lives in these nodes and is read on demand.
-
-Adding to the router should displace something, not append to it.
+  the model happens to weight it; a hook fires whether the model cooperates or not.
+- **Re-audit after every model upgrade** — treat it as a config-affecting dependency change.
+- Auto-memory is a new source of stale config: it can persist a one-off steer as a standing rule,
+  with no removal condition attached.
 
 ## Where things belong
 
-- **Global router + nodes** — policy that holds on every machine and in every repo.
-- **Project `CLAUDE.md`** — procedure, gotchas, and conventions for that repo. Spend most of
-  its tokens on gotchas, not on what the filesystem already reveals.
-- **Memory** — facts learned about Mike and the work. Note that memory does **not** sync
-  across machines; chezmoi excludes `.claude/projects/**`. Anything that must hold everywhere
-  has to graduate into the global nodes to travel.
+Global router + nodes = policy true on every machine. Project `CLAUDE.md` = that repo's gotchas.
+Memory = facts learned about Mike and the work — and it **does not sync**, since chezmoi excludes
+`.claude/projects/**`, so anything that must hold everywhere has to graduate into a node.
