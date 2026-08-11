@@ -4,6 +4,15 @@
 # Source personal environment variables (API keys, tokens, etc.)
 [ -f ~/.env ] && source ~/.env
 
+# Homebrew — full environment for interactive shells (PATH, MANPATH, INFOPATH,
+# HOMEBREW_*). .zshenv already puts brew's bin on PATH for non-interactive
+# shells; this adds the rest. Apple Silicon first, then Intel; no-op on Linux.
+if [ -x /opt/homebrew/bin/brew ]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [ -x /usr/local/bin/brew ]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+
 # NVM (Node Version Manager) initialization
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm

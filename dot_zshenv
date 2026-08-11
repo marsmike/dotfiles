@@ -3,6 +3,23 @@
 # systemd user services, cron, subprocess spawns) need in order to find our tools.
 # Interactive niceties (prompt, aliases, completions) stay in .zshrc.
 
+# --- Homebrew (Apple Silicon /opt/homebrew or Intel /usr/local) ---
+# Add brew's bin/sbin directly (cheap, no subprocess) so `brew` and every
+# brew-installed tool (claude, eza, ripgrep, ...) are on PATH for ALL shells,
+# including non-interactive ones. The full `brew shellenv` (MANPATH/INFOPATH/
+# HOMEBREW_*) runs in .zshrc for interactive shells. No-op on Linux (neither
+# prefix exists), so this file stays portable across mac and servers.
+for _brew_prefix in /opt/homebrew /usr/local; do
+  if [ -x "$_brew_prefix/bin/brew" ]; then
+    case ":${PATH}:" in
+      *":$_brew_prefix/bin:"*) ;;
+      *) export PATH="$_brew_prefix/bin:$_brew_prefix/sbin:$PATH" ;;
+    esac
+    break
+  fi
+done
+unset _brew_prefix
+
 # --- User-local binaries (uv, claude, yt-dlp, aider, llm, ttok, lazygit, chezmoi, etc.) ---
 case ":${PATH}:" in
   *":$HOME/.local/bin:"*) ;;
