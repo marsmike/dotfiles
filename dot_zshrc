@@ -92,8 +92,6 @@ plugins=(
     zsh-autosuggestions
     zsh-syntax-highlighting
     kubectl
-    aws
-    terraform
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -185,9 +183,6 @@ alias dk='docker'
 # Kubernetes context and namespace management
 alias kctx='kubectl config use-context'
 alias kns='kubectl config set-context --current --namespace'
-
-# Terraform shortcuts
-alias tf='terraform'
 
 # Claude Code launchers: auto mode, explicit model version, own git worktree.
 #
