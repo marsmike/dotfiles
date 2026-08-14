@@ -195,15 +195,17 @@ alias kns='kubectl config set-context --current --namespace'
 #   cco                     -> worktree <repo>-<YYYYmmdd-HHMM>
 #   cco -w fix-auth         -> worktree "fix-auth"
 #   cco --no-wt             -> current checkout, no worktree (read-only work)
+#   cco --hr                -> same, launched through the headroom compression proxy
 #   cco "fix the bug"       -> prompt still passes through untouched
 # Outside a git repo the worktree step is skipped automatically.
 function _cc() {
   local model="$1"; shift
-  local name="" skip=0
+  local name="" skip=0 headroom=0
   local -a args
   while (( $# )); do
     case "$1" in
       --no-wt) skip=1; shift ;;
+      --hr|--headroom) headroom=1; shift ;;
       -w|--worktree)
         shift
         if [[ -n "$1" && "$1" != -* ]]; then name="$1"; shift; fi
@@ -215,8 +217,20 @@ function _cc() {
   local -a model_flag
   [[ -n "$model" ]] && model_flag=(--model "$model")
 
+  # --hr routes through `headroom wrap claude` instead of bare `claude`. Only
+  # pass headroom's --1m when the model id itself already carries [1m] —
+  # forcing it onto a non-1m model (e.g. cch's haiku) would mint an invalid
+  # model id. See ~/.headroom docs / issue #1158 on why --1m is needed at all:
+  # a custom ANTHROPIC_BASE_URL otherwise silently drops the suffix and caps
+  # the session at 200k.
+  local -a launcher=(claude)
+  if (( headroom )); then
+    launcher=(headroom wrap claude)
+    [[ "$model" == *'[1m]'* ]] && launcher+=(--1m)
+  fi
+
   if (( skip )) || ! git rev-parse --show-toplevel >/dev/null 2>&1; then
-    claude "${model_flag[@]}" --permission-mode auto "${args[@]}"
+    "${launcher[@]}" "${model_flag[@]}" --permission-mode auto "${args[@]}"
     return
   fi
 
@@ -224,7 +238,7 @@ function _cc() {
     name="$(basename "$(git rev-parse --show-toplevel)")-$(date +%Y%m%d-%H%M)"
   fi
   print -u2 -P "%F{109}worktree: ${name}%f"
-  claude "${model_flag[@]}" --worktree "$name" --permission-mode auto "${args[@]}"
+  "${launcher[@]}" "${model_flag[@]}" --worktree "$name" --permission-mode auto "${args[@]}"
 }
 
 alias cc='_cc "claude-sonnet-5[1m]"'          # Sonnet 5, 1M context — everyday driver
@@ -362,6 +376,14 @@ All of the above run in their own git worktree by default:
   <cmd> -w <name>        -> worktree named <name>
   <cmd> --no-wt          -> stay in the current checkout (read-only work)
   git worktree list      -> see what has accumulated;  git worktree prune
+
+cc/cco/cch/ccf/cck also take --hr (--headroom): launch through the local
+headroom compression proxy instead of bare claude (adds --1m automatically
+for models whose id already carries [1m], so the window survives the proxy).
+  cco --hr               -> opus-5, 1M, through headroom
+  headroom stats         -> token savings so far;  headroom unwrap claude -> revert
+Not verified with cck: headroom's proxy sets its own ANTHROPIC_BASE_URL,
+which may fight the Kimi endpoint ~/.kimi.env sets.
 EOF
 }
 
