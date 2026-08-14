@@ -392,7 +392,7 @@ EOF
 # One-line hint on shell start (suppress with: export CC_HINT_QUIET=1)
 if [[ -o interactive && -z "${CC_HINT_QUIET:-}" ]]; then
   # -u2: stderr, so the hint never corrupts piped/captured stdout
-  print -u2 -P "%F{244}claude: cc·cco·cch·ccf·cck·cclm·cclmf3a  — current checkout by default, -wt for a worktree  (run %F{109}cchelp%F{244} for details)%f"
+  print -u2 -P "%F{244}claude: cc·cco·cch·ccf·cck·cclm·cclmf3a  — current checkout by default · -wt [name] for a worktree · --hr via headroom  (run %F{109}cchelp%F{244} for details)%f"
 fi
 
 # HuggingFace cache lives on the 4TB home volume under ~/models/huggingface
