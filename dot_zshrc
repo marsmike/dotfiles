@@ -195,10 +195,10 @@ alias kns='kubectl config set-context --current --namespace'
 # (see ~/.claude/nodes/parallel-agents.md):
 #   cco                     -> current checkout, on whatever branch is out
 #   cco -wt                 -> worktree <repo>-<YYYYmmdd-HHMM>
-#   cco -wt fix-auth        -> worktree "fix-auth"   (-w/--worktree also work)
-#   cco --hr                -> same, launched through the headroom compression proxy
+#   cco -wt fix-auth        -> worktree "fix-auth"
+#   cco -hr                 -> same, launched through the headroom compression proxy
 #   cco "fix the bug"       -> prompt still passes through untouched
-# --no-wt is still accepted as a no-op (it was the old opt-out flag).
+# --no-wt is still accepted as a silent no-op (it was the old opt-out flag).
 # Outside a git repo -wt is ignored automatically.
 function _cc() {
   local model="$1"; shift
@@ -207,8 +207,8 @@ function _cc() {
   while (( $# )); do
     case "$1" in
       --no-wt) shift ;;
-      --hr|--headroom) headroom=1; shift ;;
-      -wt|-w|--worktree)
+      -hr) headroom=1; shift ;;
+      -wt)
         wt=1; shift
         if [[ -n "$1" && "$1" != -* ]]; then name="$1"; shift; fi
         ;;
@@ -219,7 +219,7 @@ function _cc() {
   local -a model_flag
   [[ -n "$model" ]] && model_flag=(--model "$model")
 
-  # --hr routes through `headroom wrap claude` instead of bare `claude`. Only
+  # -hr routes through `headroom wrap claude` instead of bare `claude`. Only
   # pass headroom's --1m when the model id itself already carries [1m] —
   # forcing it onto a non-1m model (e.g. cch's haiku) would mint an invalid
   # model id. See ~/.headroom docs / issue #1158 on why --1m is needed at all:
@@ -376,13 +376,13 @@ claude shortcuts (model versions pinned explicitly — bump them at each release
 All of the above run in the current checkout by default; -wt for isolation:
   <cmd>                  -> current checkout, on the branch that is out
   <cmd> -wt              -> worktree named <repo>-<YYYYmmdd-HHMM>
-  <cmd> -wt <name>       -> worktree named <name>  (-w/--worktree also work)
+  <cmd> -wt <name>       -> worktree named <name>
   git worktree list      -> see what has accumulated;  git worktree prune
 
-cc/cco/cch/ccf/cck also take --hr (--headroom): launch through the local
+cc/cco/cch/ccf/cck also take -hr: launch through the local
 headroom compression proxy instead of bare claude (adds --1m automatically
 for models whose id already carries [1m], so the window survives the proxy).
-  cco --hr               -> opus-5, 1M, through headroom
+  cco -hr                -> opus-5, 1M, through headroom
   headroom stats         -> token savings so far;  headroom unwrap claude -> revert
 Not verified with cck: headroom's proxy sets its own ANTHROPIC_BASE_URL,
 which may fight the Kimi endpoint ~/.kimi.env sets.
@@ -392,7 +392,7 @@ EOF
 # One-line hint on shell start (suppress with: export CC_HINT_QUIET=1)
 if [[ -o interactive && -z "${CC_HINT_QUIET:-}" ]]; then
   # -u2: stderr, so the hint never corrupts piped/captured stdout
-  print -u2 -P "%F{244}claude: cc·cco·cch·ccf·cck·cclm·cclmf3a  — current checkout by default · -wt [name] for a worktree · --hr via headroom  (run %F{109}cchelp%F{244} for details)%f"
+  print -u2 -P "%F{244}claude: cc·cco·cch·ccf·cck·cclm·cclmf3a  — current checkout by default · -wt [name] for a worktree · -hr via headroom  (run %F{109}cchelp%F{244} for details)%f"
 fi
 
 # HuggingFace cache lives on the 4TB home volume under ~/models/huggingface
