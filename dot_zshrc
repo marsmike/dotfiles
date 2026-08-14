@@ -198,7 +198,6 @@ alias kns='kubectl config set-context --current --namespace'
 #   cco -wt fix-auth        -> worktree "fix-auth"
 #   cco -hr                 -> same, launched through the headroom compression proxy
 #   cco "fix the bug"       -> prompt still passes through untouched
-# --no-wt is still accepted as a silent no-op (it was the old opt-out flag).
 # Outside a git repo -wt is ignored automatically.
 function _cc() {
   local model="$1"; shift
@@ -206,7 +205,6 @@ function _cc() {
   local -a args
   while (( $# )); do
     case "$1" in
-      --no-wt) shift ;;
       -hr) headroom=1; shift ;;
       -wt)
         wt=1; shift
