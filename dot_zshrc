@@ -191,23 +191,25 @@ alias kns='kubectl config set-context --current --namespace'
 # rollouts, and a --model flag here overrides ANTHROPIC_DEFAULT_*_MODEL from
 # ~/.env anyway. Bump by hand each release; last bumped 2026-07-26 (Opus 5).
 #
-# Worktree isolation is the default (see ~/.claude/nodes/parallel-agents.md):
-#   cco                     -> worktree <repo>-<YYYYmmdd-HHMM>
-#   cco -w fix-auth         -> worktree "fix-auth"
-#   cco --no-wt             -> current checkout, no worktree (read-only work)
+# Runs in the current checkout by default; -wt opts into worktree isolation
+# (see ~/.claude/nodes/parallel-agents.md):
+#   cco                     -> current checkout, on whatever branch is out
+#   cco -wt                 -> worktree <repo>-<YYYYmmdd-HHMM>
+#   cco -wt fix-auth        -> worktree "fix-auth"   (-w/--worktree also work)
 #   cco --hr                -> same, launched through the headroom compression proxy
 #   cco "fix the bug"       -> prompt still passes through untouched
-# Outside a git repo the worktree step is skipped automatically.
+# --no-wt is still accepted as a no-op (it was the old opt-out flag).
+# Outside a git repo -wt is ignored automatically.
 function _cc() {
   local model="$1"; shift
-  local name="" skip=0 headroom=0
+  local name="" wt=0 headroom=0
   local -a args
   while (( $# )); do
     case "$1" in
-      --no-wt) skip=1; shift ;;
+      --no-wt) shift ;;
       --hr|--headroom) headroom=1; shift ;;
-      -w|--worktree)
-        shift
+      -wt|-w|--worktree)
+        wt=1; shift
         if [[ -n "$1" && "$1" != -* ]]; then name="$1"; shift; fi
         ;;
       *) args+=("$1"); shift ;;
@@ -229,7 +231,7 @@ function _cc() {
     [[ "$model" == *'[1m]'* ]] && launcher+=(--1m)
   fi
 
-  if (( skip )) || ! git rev-parse --show-toplevel >/dev/null 2>&1; then
+  if (( ! wt )) || ! git rev-parse --show-toplevel >/dev/null 2>&1; then
     "${launcher[@]}" "${model_flag[@]}" --permission-mode auto "${args[@]}"
     return
   fi
@@ -315,7 +317,7 @@ function cclmf3a() {
 # Creds: ~/.kimi.env (chezmoi: private_dot_kimi.env.tmpl, key from KIMI_ANTHROPIC_AUTH_TOKEN)
 # Models: kimi-k3 (default, thinking on) · kimi-k2.7-code · kimi-k2.7-code-highspeed · kimi-k2.6
 # Override per run:  KIMI_MODEL=kimi-k2.7-code-highspeed cck
-# Takes the same -w / --no-wt worktree flags as cc/cco/cch/ccf.
+# Takes the same -wt worktree flag as cc/cco/cch/ccf.
 function cck() {
   (source ~/.kimi.env && _cc "${KIMI_MODEL:-kimi-k3}" "$@")
 }
@@ -371,10 +373,10 @@ claude shortcuts (model versions pinned explicitly — bump them at each release
   cclm [Nbit] Ornith-35B via Rapid-MLX     - local MLX @ localhost:8000; arg 4bit/5bit/8bit hot-swaps
   cclmf3a Ornith-35B Q6_K-MTP (35.9 t/s)   - F3A homelab gateway @ 192.168.1.154:8080
 
-All of the above run in their own git worktree by default:
-  <cmd>                  -> worktree named <repo>-<YYYYmmdd-HHMM>
-  <cmd> -w <name>        -> worktree named <name>
-  <cmd> --no-wt          -> stay in the current checkout (read-only work)
+All of the above run in the current checkout by default; -wt for isolation:
+  <cmd>                  -> current checkout, on the branch that is out
+  <cmd> -wt              -> worktree named <repo>-<YYYYmmdd-HHMM>
+  <cmd> -wt <name>       -> worktree named <name>  (-w/--worktree also work)
   git worktree list      -> see what has accumulated;  git worktree prune
 
 cc/cco/cch/ccf/cck also take --hr (--headroom): launch through the local
@@ -390,7 +392,7 @@ EOF
 # One-line hint on shell start (suppress with: export CC_HINT_QUIET=1)
 if [[ -o interactive && -z "${CC_HINT_QUIET:-}" ]]; then
   # -u2: stderr, so the hint never corrupts piped/captured stdout
-  print -u2 -P "%F{244}claude: cc·cco·cch·ccf·cck·cclm·cclmf3a  — worktree by default, --no-wt to opt out  (run %F{109}cchelp%F{244} for details)%f"
+  print -u2 -P "%F{244}claude: cc·cco·cch·ccf·cck·cclm·cclmf3a  — current checkout by default, -wt for a worktree  (run %F{109}cchelp%F{244} for details)%f"
 fi
 
 # HuggingFace cache lives on the 4TB home volume under ~/models/huggingface
