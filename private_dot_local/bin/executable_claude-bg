@@ -2,19 +2,22 @@
 # claude-bg — spawn a DETACHED tmux session running Claude Code.
 #
 # Usage: claude-bg [--remote] <name> [dir] [fable|opus|sonnet|default]
-#   name      tmux session name (required)
+#   name      tmux session name; also the session's display name in Claude
+#             (prompt box, /resume picker, terminal title)
 #   dir       working directory (default: $HOME/work; must already exist)
 #   model     fable | opus | sonnet | default  (default: default)
 #             fable/opus/sonnet pin explicit 1M ids (bare aliases lag releases)
-#   --remote  after spawning, auto-enable Remote Control in the session
+#   --remote  start with Remote Control enabled, named <name>
 #             (accepted anywhere in the args; requires a prior `claude /login`)
+#
+# Permissions: --permission-mode auto, same as the cc* shell aliases.
 #
 # Idempotent: if a session <name> already exists, prints the attach hint
 # and exits 0 without clobbering it.
 set -euo pipefail
 
 usage() {
-  sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -45,12 +48,23 @@ claude_bin="$(command -v claude || true)"
 [[ -d "$dir" ]] || { echo "error: directory does not exist: $dir" >&2; exit 1; }
 
 case "$model" in
-  fable)   cmd="$claude_bin --model 'claude-fable-5-1[1m]' --dangerously-skip-permissions" ;;
-  opus)    cmd="$claude_bin --model 'claude-opus-5[1m]' --dangerously-skip-permissions" ;;
-  sonnet)  cmd="$claude_bin --model 'claude-sonnet-5[1m]' --dangerously-skip-permissions" ;;
-  default) cmd="$claude_bin --dangerously-skip-permissions" ;;
+  fable)   model_flag=(--model 'claude-fable-5-1[1m]') ;;
+  opus)    model_flag=(--model 'claude-opus-5[1m]') ;;
+  sonnet)  model_flag=(--model 'claude-sonnet-5[1m]') ;;
+  default) model_flag=() ;;
   *) echo "error: unknown model '$model' (use fable|opus|sonnet|default)" >&2; exit 1 ;;
 esac
+
+# Remote Control is a native flag now (claude --remote-control [name]); no
+# need to drive /remote-control through the pane after boot.
+remote_flag=()
+(( remote )) && remote_flag=(--remote-control "$name")
+
+# Assembled as one shell-quoted string because tmux new-session takes a
+# shell command, not an argv.
+# ${arr[@]+"${arr[@]}"}: empty arrays are "unbound" under set -u in bash 3.2.
+cmd="$(printf '%q ' "$claude_bin" --name "$name" ${model_flag[@]+"${model_flag[@]}"} ${remote_flag[@]+"${remote_flag[@]}"} --permission-mode auto)"
+cmd="${cmd% }"
 
 attach_hints() {
   echo "Attach:        tmux attach -t $name"
@@ -62,50 +76,21 @@ pane() {
   "$tmux_bin" capture-pane -t "$name" -p -S -60 2>/dev/null || true
 }
 
-# wait_for_ready() — poll the pane until Claude shows its input prompt.
-# Accepts a one-time folder-trust prompt along the way. Returns 0 on ready,
-# 1 on timeout. Mirrors the agents script's capture-pane polling, simpler.
-wait_for_ready() {
-  local deadline=$(( SECONDS + 30 )) trusted=0 snap
+# accept_trust() — the one interactive gate --remote-control cannot pass on
+# its own: the first-run folder-trust prompt for a directory. Polls briefly and
+# picks "Yes, I trust this folder" if it shows up; otherwise a detached --remote
+# session would sit on the dialog and never connect. The dialog's default is
+# "No, exit", so it takes a Down before Enter.
+accept_trust() {
+  local deadline=$(( SECONDS + 15 ))
   while (( SECONDS < deadline )); do
-    snap="$(pane)"
-    # Folder-trust gate: accept once, then keep polling for the prompt.
-    if (( ! trusted )) && printf '%s' "$snap" | grep -qiE 'trust the files|Yes, I trust'; then
-      "$tmux_bin" send-keys -t "$name" Enter
-      trusted=1
-      sleep 2
-      continue
-    fi
-    # Normal input prompt is a lone ❯ — that means boot finished.
-    if printf '%s' "$snap" | grep -q '❯'; then
+    if pane | grep -qiE 'trust the files|Yes, I trust'; then
+      "$tmux_bin" send-keys -t "$name" Down Enter
       return 0
     fi
     sleep 1
   done
-  return 1
-}
-
-# enable_remote() — drive /remote-control and verify it connects.
-# Returns 0 if the pane reports Remote Control active/connected, else 1.
-enable_remote() {
-  "$tmux_bin" send-keys -t "$name" "/remote-control" C-m
-  sleep 3
-  # If a menu ("Enable Remote Control") is shown, Enter picks it. If it
-  # connected directly (already chosen before), Enter is a harmless empty
-  # submit at the prompt.
-  "$tmux_bin" send-keys -t "$name" Enter
-  local deadline=$(( SECONDS + 25 )) snap
-  while (( SECONDS < deadline )); do
-    snap="$(pane)"
-    if printf '%s' "$snap" | grep -qiE 'Remote Control active|Remote Control connected|Remote Control enabled'; then
-      return 0
-    fi
-    if printf '%s' "$snap" | grep -qiE 'Remote Control failed|failed to connect'; then
-      return 1
-    fi
-    sleep 1
-  done
-  return 1
+  return 0
 }
 
 if "$tmux_bin" has-session -t "$name" 2>/dev/null; then
@@ -125,18 +110,10 @@ echo "  model:  $model"
 echo "  cmd:    $cmd"
 
 if (( remote )); then
-  echo "  remote: enabling Remote Control…"
-  if ! wait_for_ready; then
-    echo "  WARNING: session did not reach the input prompt within 30s." >&2
-    echo "  --- last pane ---" >&2
-    pane >&2
-  elif enable_remote; then
-    echo "  Remote Control: ENABLED (connected)"
-  else
-    echo "  WARNING: Remote Control did not confirm connection." >&2
-    echo "  --- last pane ---" >&2
-    pane >&2
-  fi
+  accept_trust
+  sleep 4
+  echo "  --- pane (Remote Control state) ---"
+  pane | grep -v '^\s*$' | tail -8 | sed 's/^/  /'
 fi
 
 attach_hints
