@@ -1,7 +1,10 @@
 #!/bin/bash
-# Chezmoi modify script: manage the statusLine block in ~/.claude/settings.json.
-# Everything else (enabledPlugins, hooks, tui, …) is per-machine and passed
-# through untouched.
+# Chezmoi modify script: manage the statusLine block and the default model in
+# ~/.claude/settings.json. Everything else (enabledPlugins, hooks, tui, …) is
+# per-machine and passed through untouched.
+#
+# model: pinned to an explicit versioned id, same reasoning as the cc aliases in
+# ~/.zshrc (bare aliases lag releases). Bump here and there together.
 #
 # extraKnownMarketplaces is actively removed — no longer used.
 #
@@ -35,8 +38,11 @@ GUARD="$(jq -n --arg cmd "python3 '$HOME/.claude/hooks/vault-guard.sh'" '{
   timeout: 10
 }')"
 
-echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" '
+MODEL='claude-fable-5-1[1m]'
+
+echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --arg model "$MODEL" '
     .statusLine = $sl
+  | .model = $model
   | del(.extraKnownMarketplaces)
   | .hooks.PreToolUse = (
       (.hooks.PreToolUse // [])

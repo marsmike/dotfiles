@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # claude-bg — spawn a DETACHED tmux session running Claude Code.
 #
-# Usage: claude-bg [--remote] <name> [dir] [opus|sonnet|default]
+# Usage: claude-bg [--remote] <name> [dir] [fable|opus|sonnet|default]
 #   name      tmux session name (required)
 #   dir       working directory (default: $HOME/work; must already exist)
-#   model     opus | sonnet | default  (default: default)
+#   model     fable | opus | sonnet | default  (default: default)
+#             fable/opus/sonnet pin explicit 1M ids (bare aliases lag releases)
 #   --remote  after spawning, auto-enable Remote Control in the session
 #             (accepted anywhere in the args; requires a prior `claude /login`)
 #
@@ -44,10 +45,11 @@ claude_bin="$(command -v claude || true)"
 [[ -d "$dir" ]] || { echo "error: directory does not exist: $dir" >&2; exit 1; }
 
 case "$model" in
-  opus)    cmd="$claude_bin --model opus --dangerously-skip-permissions" ;;
-  sonnet)  cmd="$claude_bin --model sonnet --dangerously-skip-permissions" ;;
+  fable)   cmd="$claude_bin --model 'claude-fable-5-1[1m]' --dangerously-skip-permissions" ;;
+  opus)    cmd="$claude_bin --model 'claude-opus-5[1m]' --dangerously-skip-permissions" ;;
+  sonnet)  cmd="$claude_bin --model 'claude-sonnet-5[1m]' --dangerously-skip-permissions" ;;
   default) cmd="$claude_bin --dangerously-skip-permissions" ;;
-  *) echo "error: unknown model '$model' (use opus|sonnet|default)" >&2; exit 1 ;;
+  *) echo "error: unknown model '$model' (use fable|opus|sonnet|default)" >&2; exit 1 ;;
 esac
 
 attach_hints() {
