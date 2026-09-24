@@ -8,7 +8,7 @@ This file routes; it does not answer. Content lives in `~/.claude/nodes/`.
 
 | When the question is about | Go to |
 |---|---|
-| What Mike knows, has read, or wrote down; research, notes, prior work | `nodes/obsidian.md` → the vault's own `Index.md` + `CLAUDE.md` |
+| What Mike knows, has read, or wrote down; research, notes, prior work | `nodes/obsidian.md` → the vault's own `Index.md` + `AGENTS.md` |
 | Several agents on one repo; worktrees, committing, merging | `nodes/parallel-agents.md` |
 | Cloning a repo, installing a package, running someone else's script | `nodes/external-code.md` |
 | Language, package manager, env vars, file naming | `nodes/tooling.md` |
