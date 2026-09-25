@@ -1,0 +1,3 @@
+# outcome-lead: frontier model at medium effort
+model = "gpt-6-astra"
+model_reasoning_effort = "medium"

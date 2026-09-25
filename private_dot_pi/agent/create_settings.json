@@ -1,0 +1,13 @@
+{
+  "defaultProvider": "lmstudio",
+  "defaultModel": "qwen3.8-27b-splash",
+  "packages": [
+    "npm:@ollama/pi-web-search"
+  ],
+  "theme": "dark",
+  "enabledModels": [
+    "lmstudio/qwen3.8-27b-splash",
+    "ollama/kimi-k3:cloud",
+    "ollama/glm-5.3:cloud"
+  ]
+}

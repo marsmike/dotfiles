@@ -1,0 +1,97 @@
+{
+  "providers": {
+    "lmstudio": {
+      "api": "openai-completions",
+      "apiKey": "lm-studio",
+      "baseUrl": "http://127.0.0.1:1234/v1",
+      "models": [
+        {
+          "id": "qwen3.8-27b-splash",
+          "name": "Qwen 3.8 27B Splash (local LM Studio)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "ollama": {
+      "api": "openai-completions",
+      "apiKey": "ollama",
+      "baseUrl": "http://127.0.0.1:11434/v1",
+      "models": [
+        {
+          "id": "glm-5.3:cloud",
+          "contextWindow": 1048576,
+          "input": [
+            "text"
+          ],
+          "reasoning": true,
+          "maxTokens": 65536
+        },
+        {
+          "id": "glm-5.3-flash:cloud",
+          "contextWindow": 1048576,
+          "input": [
+            "text"
+          ],
+          "reasoning": true,
+          "maxTokens": 65536
+        },
+        {
+          "id": "kimi-k3:cloud",
+          "contextWindow": 1048576,
+          "input": [
+            "text"
+          ],
+          "reasoning": true,
+          "maxTokens": 65536
+        },
+        {
+          "id": "deepseek-v4.1-flash:cloud",
+          "contextWindow": 1048576,
+          "input": [
+            "text"
+          ],
+          "reasoning": true,
+          "maxTokens": 65536
+        },
+        {
+          "id": "deepseek-v4-pro:0813-cloud",
+          "contextWindow": 1048576,
+          "input": [
+            "text"
+          ],
+          "reasoning": true,
+          "maxTokens": 65536
+        },
+        {
+          "id": "minimax-m3:cloud",
+          "contextWindow": 512000,
+          "input": [
+            "text"
+          ],
+          "reasoning": true,
+          "maxTokens": 65536
+        },
+        {
+          "id": "kimi-k2.7-code:cloud",
+          "contextWindow": 262144,
+          "input": [
+            "text"
+          ],
+          "reasoning": true,
+          "maxTokens": 32768
+        }
+      ]
+    }
+  }
+}

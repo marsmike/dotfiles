@@ -1,0 +1,106 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "ollama/glm-5.3:cloud",
+  "small_model": "ollama/glm-5.3-flash:cloud",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama",
+      "options": {
+        "baseURL": "http://127.0.0.1:11434/v1"
+      },
+      "models": {
+        "glm-5.3:cloud": {
+          "name": "GLM 5.3 (cloud)",
+          "tool_call": true,
+          "reasoning": true,
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          }
+        },
+        "glm-5.3-flash:cloud": {
+          "name": "GLM 5.3 Flash (cloud)",
+          "tool_call": true,
+          "reasoning": true,
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          }
+        },
+        "kimi-k3:cloud": {
+          "name": "Kimi K3 (cloud)",
+          "tool_call": true,
+          "reasoning": true,
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          }
+        },
+        "deepseek-v4.1-flash:cloud": {
+          "name": "DeepSeek V4.1 Flash (cloud)",
+          "tool_call": true,
+          "reasoning": true,
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          }
+        },
+        "deepseek-v4-pro:0813-cloud": {
+          "name": "DeepSeek V4 Pro (cloud)",
+          "tool_call": true,
+          "reasoning": true,
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          }
+        },
+        "minimax-m3:cloud": {
+          "name": "MiniMax M3 (cloud)",
+          "tool_call": true,
+          "reasoning": true,
+          "limit": {
+            "context": 512000,
+            "output": 65536
+          }
+        },
+        "kimi-k2.7-code:cloud": {
+          "name": "Kimi K2.7 Code (cloud)",
+          "tool_call": true,
+          "reasoning": true,
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        }
+      }
+    },
+    "lmstudio": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LM Studio (local)",
+      "options": {
+        "baseURL": "http://127.0.0.1:1234/v1"
+      },
+      "models": {
+        "qwen3.8-27b-splash": {
+          "name": "Qwen 3.8 27B Splash (local)",
+          "tool_call": true,
+          "reasoning": true,
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        }
+      },
+      "whitelist": [
+        "qwen3.8-27b-splash"
+      ]
+    }
+  },
+  "autoupdate": false,
+  "share": "disabled",
+  "compaction": {
+    "auto": true,
+    "prune": true
+  }
+}

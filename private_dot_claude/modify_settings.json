@@ -8,6 +8,11 @@
 #
 # extraKnownMarketplaces is actively removed — no longer used.
 #
+# permissions.defaultMode = bypassPermissions (operator choice 2026-09-25): agents
+# run unattended under OpenRig (~/Developer/openrig); matches the cc* aliases'
+# --dangerously-skip-permissions. skipDangerousModePermissionPrompt drops the
+# one-time confirmation dialog for that mode.
+#
 # Status line: ccstatusline (https://github.com/sirmalloc/ccstatusline).
 # Layout lives in ~/.config/ccstatusline/settings.json, also managed by chezmoi.
 # An absolute command path is required: the status line runs in a spawned shell
@@ -43,6 +48,8 @@ MODEL='claude-fable-5-1[1m]'
 echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --arg model "$MODEL" '
     .statusLine = $sl
   | .model = $model
+  | .permissions.defaultMode = "bypassPermissions"
+  | .skipDangerousModePermissionPrompt = true
   | del(.extraKnownMarketplaces)
   | .hooks.PreToolUse = (
       (.hooks.PreToolUse // [])

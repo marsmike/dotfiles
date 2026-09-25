@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "lines": [
     [
       {
@@ -42,7 +42,7 @@
       },
       {
         "type": "custom-text",
-        "customText": "\u2387 ",
+        "customText": "⎇ ",
         "color": "brightBlack",
         "merge": "no-padding",
         "id": "8"

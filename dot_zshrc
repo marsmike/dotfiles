@@ -184,7 +184,7 @@ alias dk='docker'
 alias kctx='kubectl config use-context'
 alias kns='kubectl config set-context --current --namespace'
 
-# Claude Code launchers: auto mode, explicit model version, own git worktree.
+# Claude Code launchers: bypass permissions (yolo), explicit model version, own git worktree.
 #
 # Models are pinned to explicit versioned ids on purpose. The bare `opus` /
 # `sonnet` aliases have repeatedly lagged a generation behind during staged
@@ -230,7 +230,7 @@ function _cc() {
   fi
 
   if (( ! wt )) || ! git rev-parse --show-toplevel >/dev/null 2>&1; then
-    "${launcher[@]}" "${model_flag[@]}" --permission-mode auto "${args[@]}"
+    "${launcher[@]}" "${model_flag[@]}" --dangerously-skip-permissions "${args[@]}"
     return
   fi
 
@@ -238,7 +238,7 @@ function _cc() {
     name="$(basename "$(git rev-parse --show-toplevel)")-$(date +%Y%m%d-%H%M)"
   fi
   print -u2 -P "%F{109}worktree: ${name}%f"
-  "${launcher[@]}" "${model_flag[@]}" --worktree "$name" --permission-mode auto "${args[@]}"
+  "${launcher[@]}" "${model_flag[@]}" --worktree "$name" --dangerously-skip-permissions "${args[@]}"
 }
 
 alias cc='_cc "claude-sonnet-5[1m]"'          # Sonnet 5, 1M context — everyday driver
@@ -255,59 +255,17 @@ if [[ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]]; then
   unset _claude_code_oauth_token
 fi
 
-# Claude Code routed through local MLX backend via Rapid-MLX (native Anthropic endpoint)
-# Daemon: ~/Library/LaunchAgents/com.mike.rapidmlx.plist (port 8000)
-# Backend: Rapid-MLX serving mlx-community/Ornith-1.0-35B-{4,5,8}bit with --no-thinking
-# Usage:
-#   cclm            run against whatever quant the daemon currently has loaded
-#   cclm 5bit       hot-swap daemon to Ornith-1.0-35B-5bit if needed, then run
-#   cclm 4bit       same for -4bit
-#   cclm 8bit       same for -8bit
-# The bare number form ("cclm 5") also works and is treated as "5bit".
+# Claude Code routed through local LM Studio (Anthropic-compatible /v1/messages @ :1234)
+# Model: qwen3.8-27b-splash (splash engine), JIT-loaded on first request.
+# Env:   ~/.lmstudio.env (chezmoi: dot_lmstudio.env, no secret)
 function cclm() {
-  local plist=~/Library/LaunchAgents/com.mike.rapidmlx.plist
-  # Only treat $1 as a quant selector if it matches Nbit / N-digit form.
-  # Anything else (a claude arg like "-c", "--help", or a raw prompt) is
-  # passed straight through to claude so the bare passthrough interface
-  # stays intact.
-  if [[ "$1" =~ ^[0-9]+(bit)?$ ]]; then
-    local requested="${1%bit}bit"
-    local target_id="mlx-community/Ornith-1.0-35B-${requested}"
-    local current_id
-    current_id=$(grep -oE 'mlx-community/Ornith-1.0-35B-[0-9]+bit' "$plist")
-    if [[ "$current_id" != "$target_id" ]]; then
-      print -u2 -P "%F{109}cclm: swapping backend ${current_id} -> ${target_id} ...%f"
-      sed -i '' "s|mlx-community/Ornith-1.0-35B-[0-9]*bit|$target_id|" "$plist"
-      launchctl bootout gui/$(id -u) "$plist" 2>/dev/null
-      launchctl bootstrap gui/$(id -u) "$plist" || {
-        print -u2 -P "%F{160}cclm: launchctl bootstrap failed%f"; return 1;
-      }
-      local i
-      for i in {1..30}; do
-        curl -s --max-time 2 -H "Authorization: Bearer sk-rapidmlx-local" \
-          http://127.0.0.1:8000/v1/models >/dev/null 2>&1 && break
-        sleep 1
-      done
-      if [[ $i -eq 30 ]]; then
-        print -u2 -P "%F{160}cclm: server did not become healthy within 30s — check ~/Library/Logs/rapidmlx/rapidmlx.err.log%f"
-        return 1
-      fi
-      print -u2 -P "%F{109}cclm: ${target_id} ready%f"
-    fi
-    (source ~/.ornith.env \
-      && export ANTHROPIC_MODEL="$target_id" \
-                ANTHROPIC_SMALL_FAST_MODEL="$target_id" \
-                CLAUDE_CODE_SUBAGENT_MODEL="$target_id" \
-      && claude --permission-mode auto "${@:2}")
-  else
-    (source ~/.ornith.env && claude --permission-mode auto "$@")
-  fi
+  (source ~/.lmstudio.env && claude --dangerously-skip-permissions "$@")
 }
 
 # Claude Code routed through the F3A homelab box (Ornith-1.0-35B Q6_K-MTP, 35.9 t/s)
 # Gateway: llama.cpp native Anthropic /v1/messages via llama-swap @ 192.168.1.154:8080
 function cclmf3a() {
-  (source ~/.ornith-f3a.env && claude --permission-mode auto "$@")
+  (source ~/.ornith-f3a.env && claude --dangerously-skip-permissions "$@")
 }
 
 # Claude Code routed through Kimi / Moonshot (Anthropic-compatible endpoint)
@@ -319,6 +277,31 @@ function cclmf3a() {
 function cck() {
   (source ~/.kimi.env && _cc "${KIMI_MODEL:-kimi-k3}" "$@")
 }
+
+# --- Other coding agents: one prefix per agent, see `aihelp` ----------------
+# Backends: Ollama cloud models via the signed-in local daemon (:11434, `:cloud`
+# tags, no key in the env) and LM Studio (:1234). Same model ids OpenRig's
+# rig.yaml launches (~/Developer/openrig).
+
+# OpenCode — config: ~/.config/opencode/opencode.json (providers: ollama, lmstudio)
+alias oc='opencode -m ollama/glm-5.3:cloud'            # GLM 5.3 — default, design/general
+alias ock='opencode -m ollama/kimi-k3:cloud'           # Kimi K3 — second opinion, security lens
+alias ocf='opencode -m ollama/glm-5.3-flash:cloud'     # GLM 5.3 Flash — fast/cheap
+alias oclm='opencode -m lmstudio/qwen3.8-27b-splash'   # fully local
+
+# Pi — config: ~/.pi/agent/{models,settings}.json (default: LM Studio splash)
+alias p='pi'                                           # Qwen 3.8 27B splash, local
+alias pk='pi --model ollama/kimi-k3:cloud'             # Kimi K3 via Ollama cloud
+alias pg='pi --model ollama/glm-5.3:cloud'             # GLM 5.3 via Ollama cloud
+
+# Codex — ChatGPT login; profiles are ~/.codex/<name>.config.toml (codex -p <name>)
+alias cx='codex'                                       # gpt-6-sol medium — workhorse
+alias cxa='codex -p astra'                             # gpt-6-astra high — hard problems
+alias cxf='codex -p sol-fast'                          # gpt-6-sol, priority tier
+alias cxl='codex -p luna'                              # gpt-6-luna low — cheap/quick
+
+# Antigravity — Google account login (browser on first run)
+alias ag='agy'
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
@@ -359,16 +342,16 @@ command -v direnv &>/dev/null && eval "$(direnv hook zsh)"
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-# Reference card for the claude shortcuts defined above
-function cchelp() {
+# Reference card for the agent shortcuts defined above
+function aihelp() {
   cat <<'EOF'
-claude shortcuts (model versions pinned explicitly — bump them at each release):
-  cc    sonnet-5   1M (auto perms)         - default everyday driver
-  cco   opus-5.5   1M (auto perms)         - heavier reasoning
-  cch   haiku-4.5     (auto perms)         - fastest / cheapest
-  ccf   fable-5.1  1M (auto perms)         - most capable; thinking always on
-  cck   kimi-k3       (auto perms)         - Kimi/Moonshot; KIMI_MODEL=... to switch
-  cclm [Nbit] Ornith-35B via Rapid-MLX     - local MLX @ localhost:8000; arg 4bit/5bit/8bit hot-swaps
+Claude Code (model versions pinned explicitly — bump them at each release):
+  cc    sonnet-5   1M (skip perms)         - default everyday driver
+  cco   opus-5.5   1M (skip perms)         - heavier reasoning
+  cch   haiku-4.5     (skip perms)         - fastest / cheapest
+  ccf   fable-5.1  1M (skip perms)         - most capable; thinking always on
+  cck   kimi-k3       (skip perms)         - Kimi/Moonshot; KIMI_MODEL=... to switch
+  cclm  qwen3.8-27b-splash                 - local LM Studio @ localhost:1234
   cclmf3a Ornith-35B Q6_K-MTP (35.9 t/s)   - F3A homelab gateway @ 192.168.1.154:8080
 
 All of the above run in the current checkout by default; -wt for isolation:
@@ -384,13 +367,34 @@ for models whose id already carries [1m], so the window survives the proxy).
   headroom stats         -> token savings so far;  headroom unwrap claude -> revert
 Not verified with cck: headroom's proxy sets its own ANTHROPIC_BASE_URL,
 which may fight the Kimi endpoint ~/.kimi.env sets.
+
+OpenCode (Ollama cloud via the local daemon; /models to switch inside):
+  oc    glm-5.3            - default, design/general
+  ock   kimi-k3            - second opinion, security lens
+  ocf   glm-5.3-flash      - fast/cheap
+  oclm  qwen3.8-27b-splash - fully local (LM Studio)
+
+Pi:
+  p     qwen3.8-27b-splash - local LM Studio (default)
+  pk    kimi-k3            - Ollama cloud
+  pg    glm-5.3            - Ollama cloud
+
+Codex (ChatGPT login; any profile: codex -p <name>):
+  cx    gpt-6-sol medium   - workhorse
+  cxa   gpt-6-astra high   - hard problems  (also: astra-max, astra-medium, astra-fast, sol-high)
+  cxf   gpt-6-sol fast     - priority tier
+  cxl   gpt-6-luna low     - cheap/quick
+
+Antigravity:
+  ag    agy                - Google account
 EOF
 }
+alias cchelp='aihelp'
 
 # One-line hint on shell start (suppress with: export CC_HINT_QUIET=1)
 if [[ -o interactive && -z "${CC_HINT_QUIET:-}" ]]; then
   # -u2: stderr, so the hint never corrupts piped/captured stdout
-  print -u2 -P "%F{244}claude: cc=sonnet-5 · cco=opus-5.5 · cch=haiku-4.5 · ccf=fable-5.1 · cck=kimi · cclm/cclmf3a=local  — current checkout by default · -wt [name] for a worktree · -hr via headroom  (run %F{109}cchelp%F{244} for details)%f"
+  print -u2 -P "%F{244}agents: cc/cco/cch/ccf/cck/cclm=claude · oc/ock/ocf/oclm=opencode · p/pk/pg=pi · cx/cxa/cxf/cxl=codex · ag=antigravity  (run %F{109}aihelp%F{244} for details)%f"
 fi
 
 # HuggingFace cache lives on the 4TB home volume under ~/models/huggingface

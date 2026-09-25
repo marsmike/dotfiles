@@ -1,0 +1,4 @@
+# astra on the priority tier (2x speed, more usage)
+model = "gpt-6-astra"
+model_reasoning_effort = "medium"
+service_tier = "fast"

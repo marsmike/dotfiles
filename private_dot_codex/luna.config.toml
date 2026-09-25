@@ -1,0 +1,3 @@
+# cheap and quick for easy tasks
+model = "gpt-6-luna"
+model_reasoning_effort = "low"

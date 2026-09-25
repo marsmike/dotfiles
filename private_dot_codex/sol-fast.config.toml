@@ -1,0 +1,4 @@
+# priority tier, 1.5x speed
+model = "gpt-6-sol"
+model_reasoning_effort = "medium"
+service_tier = "fast"
