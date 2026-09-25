@@ -189,7 +189,7 @@ alias kns='kubectl config set-context --current --namespace'
 # Models are pinned to explicit versioned ids on purpose. The bare `opus` /
 # `sonnet` aliases have repeatedly lagged a generation behind during staged
 # rollouts, and a --model flag here overrides ANTHROPIC_DEFAULT_*_MODEL from
-# ~/.env anyway. Bump by hand each release; last bumped 2026-09-07 (Fable 5.1).
+# ~/.env anyway. Bump by hand each release; last bumped 2026-09-25 (Opus 5.5).
 #
 # Runs in the current checkout by default; -wt opts into worktree isolation
 # (see ~/.claude/nodes/parallel-agents.md):
@@ -242,7 +242,7 @@ function _cc() {
 }
 
 alias cc='_cc "claude-sonnet-5[1m]"'          # Sonnet 5, 1M context — everyday driver
-alias cco='_cc "claude-opus-5[1m]"'           # Opus 5, 1M context — heavier reasoning
+alias cco='_cc "claude-opus-5-5[1m]"'         # Opus 5.5, 1M context — heavier reasoning
 alias cch='_cc "claude-haiku-4-5-20251001"'   # Haiku 4.5 — fastest / cheapest
 alias ccf='_cc "claude-fable-5-1[1m]"'        # Fable 5.1 — thinking always on, most capable
 
@@ -364,7 +364,7 @@ function cchelp() {
   cat <<'EOF'
 claude shortcuts (model versions pinned explicitly — bump them at each release):
   cc    sonnet-5   1M (auto perms)         - default everyday driver
-  cco   opus-5     1M (auto perms)         - heavier reasoning
+  cco   opus-5.5   1M (auto perms)         - heavier reasoning
   cch   haiku-4.5     (auto perms)         - fastest / cheapest
   ccf   fable-5.1  1M (auto perms)         - most capable; thinking always on
   cck   kimi-k3       (auto perms)         - Kimi/Moonshot; KIMI_MODEL=... to switch
@@ -380,7 +380,7 @@ All of the above run in the current checkout by default; -wt for isolation:
 cc/cco/cch/ccf/cck also take -hr: launch through the local
 headroom compression proxy instead of bare claude (adds --1m automatically
 for models whose id already carries [1m], so the window survives the proxy).
-  cco -hr                -> opus-5, 1M, through headroom
+  cco -hr                -> opus-5.5, 1M, through headroom
   headroom stats         -> token savings so far;  headroom unwrap claude -> revert
 Not verified with cck: headroom's proxy sets its own ANTHROPIC_BASE_URL,
 which may fight the Kimi endpoint ~/.kimi.env sets.
@@ -390,7 +390,7 @@ EOF
 # One-line hint on shell start (suppress with: export CC_HINT_QUIET=1)
 if [[ -o interactive && -z "${CC_HINT_QUIET:-}" ]]; then
   # -u2: stderr, so the hint never corrupts piped/captured stdout
-  print -u2 -P "%F{244}claude: cc=sonnet-5 · cco=opus-5 · cch=haiku-4.5 · ccf=fable-5.1 · cck=kimi · cclm/cclmf3a=local  — current checkout by default · -wt [name] for a worktree · -hr via headroom  (run %F{109}cchelp%F{244} for details)%f"
+  print -u2 -P "%F{244}claude: cc=sonnet-5 · cco=opus-5.5 · cch=haiku-4.5 · ccf=fable-5.1 · cck=kimi · cclm/cclmf3a=local  — current checkout by default · -wt [name] for a worktree · -hr via headroom  (run %F{109}cchelp%F{244} for details)%f"
 fi
 
 # HuggingFace cache lives on the 4TB home volume under ~/models/huggingface
