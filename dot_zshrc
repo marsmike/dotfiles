@@ -387,14 +387,44 @@ Codex (ChatGPT login; any profile: codex -p <name>):
 
 Antigravity:
   ag    agy                - Google account
+
+agents / ai            -> the short card shown at shell start
 EOF
 }
 alias cchelp='aihelp'
 
-# One-line hint on shell start (suppress with: export CC_HINT_QUIET=1)
+# Compact agent card: one row per agent, alias then model. Shown as the shell
+# greeting and on demand via `agents` / `ai`; `aihelp` has the full reference.
+function agents() {
+  local -a rows=(
+    '173|claude  |cc sonnet-5 · cco opus-5.5 · ccf fable-5.1 · cch haiku · cck kimi · cclm local'
+    '109|opencode|oc glm-5.3 · ock kimi-k3 · ocf glm-5.3-flash · oclm local'
+    '150|pi      |p local splash · pk kimi-k3 · pg glm-5.3'
+    '250|codex   |cx sol · cxa astra · cxf sol-fast · cxl luna'
+    '75|agy     |ag antigravity'
+  )
+  local row color name items item
+  for row in "${rows[@]}"; do
+    color="${row%%|*}"; row="${row#*|}"
+    name="${row%%|*}"; items="${row#*|}"
+    # Alias in the family colour, model dimmed.
+    local line=""
+    for item in "${(@s: · :)items}"; do
+      line+="%F{${color}}${item%% *}%f %F{244}${item#* }%f  "
+    done
+    print -P "  %B%F{${color}}${name}%f%b  ${line%  }"
+  done
+  print -P "  %F{244}cc*: skip perms, -wt worktree · %F{109}aihelp%F{244} for more · CC_HINT_QUIET=1 hides%f"
+}
+alias ai='agents'
+
+# Shell greeting (suppress with: export CC_HINT_QUIET=1)
 if [[ -o interactive && -z "${CC_HINT_QUIET:-}" ]]; then
-  # -u2: stderr, so the hint never corrupts piped/captured stdout
-  print -u2 -P "%F{244}agents: cc/cco/cch/ccf/cck/cclm=claude · oc/ock/ocf/oclm=opencode · p/pk/pg=pi · cx/cxa/cxf/cxl=codex · ag=antigravity  (run %F{109}aihelp%F{244} for details)%f"
+  # stderr, so the greeting never corrupts piped/captured stdout
+  {
+    print -P "%F{244}Hi ${(C)USER} — your agents:%f"
+    agents
+  } >&2
 fi
 
 # HuggingFace cache lives on the 4TB home volume under ~/models/huggingface
