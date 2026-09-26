@@ -1,10 +1,8 @@
 # Obsidian vault
 
-`~/Documents/TheVoid`. A git repo (`marsmike/TheVoid`) whose one committer is the pipeline:
-`pipeline_run.py begin`/`end`, run every 3 h by a Claude cloud routine in its own clone. Never
-run git in it yourself. Edits made on the Mac reach git only through Obsidian Git's auto
-commit-and-sync, not through the cloud's `begin`. PDFs and other binaries are git-ignored
-(they live only in Obsidian Sync).
+`~/Documents/TheVoid`. A git repo (`marsmike/TheVoid`). The pipeline (`pipeline_run.py
+begin`/`end`) commits to it every 3 h from a Claude cloud routine in its own clone, so pull
+before editing. PDFs and other binaries are git-ignored (they live only in Obsidian Sync).
 
 ## Looking something up
 
