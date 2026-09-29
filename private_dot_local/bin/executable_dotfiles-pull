@@ -1,0 +1,31 @@
+#!/bin/bash
+# Pull the chezmoi source repo unattended (LaunchAgent: at login + hourly).
+# Pull only — never applies. Applying would clobber live drift; review with
+# `chezmoi diff` and run `chezmoi apply` yourself when notified.
+#
+# Safe by construction: fast-forward when possible, rebase local commits when
+# diverged, and abort cleanly (plus a notification) on conflict or dirty tree.
+set -u
+SRC="$HOME/.local/share/chezmoi"
+cd "$SRC" || exit 1
+
+notify() { osascript -e "display notification \"$1\" with title \"dotfiles\"" >/dev/null 2>&1; echo "$(date '+%F %T') $1"; }
+
+git fetch -q origin 2>/dev/null || { echo "$(date '+%F %T') fetch failed (offline?)"; exit 0; }
+git rev-parse -q --verify '@{u}' >/dev/null || { notify "no upstream branch set"; exit 1; }
+
+behind=$(git rev-list --count 'HEAD..@{u}')
+[ "$behind" -eq 0 ] && exit 0
+
+if [ -n "$(git status --porcelain)" ]; then
+  notify "$behind new commit(s), but uncommitted changes in chezmoi source — pull by hand"
+  exit 1
+fi
+
+if git merge -q --ff-only '@{u}' 2>/dev/null || git rebase -q '@{u}' 2>/dev/null; then
+  notify "pulled $behind commit(s) — run chezmoi diff, then chezmoi apply"
+else
+  git rebase --abort 2>/dev/null
+  notify "pull conflicts with local commits — resolve by hand"
+  exit 1
+fi

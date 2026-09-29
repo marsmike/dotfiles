@@ -1,0 +1,8 @@
+#!/bin/bash
+# (Re)load the dotfiles-pull LaunchAgent whenever its plist changes.
+# plist hash: {{ include "private_Library/LaunchAgents/de.objektarium.dotfiles-pull.plist.tmpl" | sha256sum }}
+{{ if eq .chezmoi.os "darwin" -}}
+PLIST="$HOME/Library/LaunchAgents/de.objektarium.dotfiles-pull.plist"
+launchctl bootout "gui/$(id -u)" "$PLIST" 2>/dev/null
+launchctl bootstrap "gui/$(id -u)" "$PLIST"
+{{ end -}}
