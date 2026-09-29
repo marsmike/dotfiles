@@ -146,3 +146,7 @@ if [ -n "$BASH_VERSION" ] && [ -z "$ZSH_VERSION" ] && command -v zsh &>/dev/null
   export SHELL=$(command -v zsh)
   exec zsh
 fi
+
+
+# Added by Antigravity CLI installer
+export PATH="/Users/mike/.local/bin:$PATH"

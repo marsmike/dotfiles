@@ -6,7 +6,8 @@
 # model: pinned to an explicit versioned id, same reasoning as the cc aliases in
 # ~/.zshrc (bare aliases lag releases). Bump here and there together.
 #
-# extraKnownMarketplaces is actively removed — no longer used.
+# extraKnownMarketplaces (typesafe-ai, agentic-toolkit) is per-machine and passed
+# through — the typesafe and agentic-toolkit plugins depend on it.
 #
 # permissions.defaultMode = bypassPermissions (operator choice 2026-09-25): agents
 # run unattended under OpenRig (~/Developer/openrig); matches the cc* aliases'
@@ -43,14 +44,13 @@ GUARD="$(jq -n --arg cmd "python3 '$HOME/.claude/hooks/vault-guard.sh'" '{
   timeout: 10
 }')"
 
-MODEL='claude-fable-5-1[1m]'
+MODEL='claude-opus-5-5[1m]'
 
 echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --arg model "$MODEL" '
     .statusLine = $sl
   | .model = $model
   | .permissions.defaultMode = "bypassPermissions"
   | .skipDangerousModePermissionPrompt = true
-  | del(.extraKnownMarketplaces)
   | .hooks.PreToolUse = (
       (.hooks.PreToolUse // [])
       | if any(.[]; .matcher == "Bash") then
