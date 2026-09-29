@@ -189,7 +189,7 @@ alias kns='kubectl config set-context --current --namespace'
 # Models are pinned to explicit versioned ids on purpose. The bare `opus` /
 # `sonnet` aliases have repeatedly lagged a generation behind during staged
 # rollouts, and a --model flag here overrides ANTHROPIC_DEFAULT_*_MODEL from
-# ~/.env anyway. Bump by hand each release; last bumped 2026-09-25 (Opus 5.5).
+# ~/.env anyway. Bump by hand each release; last bumped 2026-09-29 (Sonnet 5.5).
 #
 # Runs in the current checkout by default; -wt opts into worktree isolation
 # (see ~/.claude/nodes/parallel-agents.md):
@@ -241,7 +241,7 @@ function _cc() {
   "${launcher[@]}" "${model_flag[@]}" --worktree "$name" --dangerously-skip-permissions "${args[@]}"
 }
 
-alias cc='_cc "claude-sonnet-5[1m]"'          # Sonnet 5, 1M context — everyday driver
+alias cc='_cc "claude-sonnet-5-5[1m]"'        # Sonnet 5.5, 1M context — everyday driver
 alias cco='_cc "claude-opus-5-5[1m]"'         # Opus 5.5, 1M context — heavier reasoning
 alias cch='_cc "claude-haiku-4-5-20251001"'   # Haiku 4.5 — fastest / cheapest
 alias ccf='_cc "claude-fable-5-1[1m]"'        # Fable 5.1 — thinking always on, most capable
@@ -346,7 +346,7 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 function aihelp() {
   cat <<'EOF'
 Claude Code (model versions pinned explicitly — bump them at each release):
-  cc    sonnet-5   1M (skip perms)         - default everyday driver
+  cc    sonnet-5.5 1M (skip perms)         - default everyday driver
   cco   opus-5.5   1M (skip perms)         - heavier reasoning
   cch   haiku-4.5     (skip perms)         - fastest / cheapest
   ccf   fable-5.1  1M (skip perms)         - most capable; thinking always on
@@ -397,7 +397,7 @@ alias cchelp='aihelp'
 # greeting and on demand via `agents` / `ai`; `aihelp` has the full reference.
 function agents() {
   local -a rows=(
-    '173|claude  |cc sonnet-5 · cco opus-5.5 · ccf fable-5.1 · cch haiku · cck kimi · cclm local'
+    '173|claude  |cc sonnet-5.5 · cco opus-5.5 · ccf fable-5.1 · cch haiku · cck kimi · cclm local'
     '109|opencode|oc glm-5.3 · ock kimi-k3 · ocf glm-5.3-flash · oclm local'
     '150|pi      |p local splash · pk kimi-k3 · pg glm-5.3'
     '250|codex   |cx sol · cxa astra · cxf sol-fast · cxl luna'
@@ -434,3 +434,6 @@ export HF_HOME="$HOME/models/huggingface"
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:/Users/mike/.lmstudio/bin"
 # End of LM Studio CLI section
+
+# Added by Devin
+export PATH="/Users/mike/.codeium/windsurf/bin:$PATH"
