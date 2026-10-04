@@ -9,8 +9,8 @@ import re
 import sys
 
 MANAGED = {
-    "model": '"gpt-6-sol"',
-    "model_reasoning_effort": '"medium"',
+    "model": '"gpt-6.1-sol"',
+    "model_reasoning_effort": '"xhigh"',
     "plan_mode_reasoning_effort": '"high"',
     "check_for_update_on_startup": "true",
 }

@@ -7,8 +7,9 @@ before editing. PDFs and other binaries are git-ignored (they live only in Obsid
 ## Looking something up
 
 1. `Now.md`, then `Index.md` — generated, one line per active note. Cheap first pass.
-2. Then search: `search.py` in the toolkit (BM25, plus semantic when installed); the vault's
-   `AGENTS.md` has the command. Grepping `Index.md` and `description:` lines is fine.
+2. Then `unisphere search <words>` and `unisphere graph neighbors|path <note>` (`--json`; the
+   toolkit's CLI, on PATH here; `unisphere commands --json` lists the rest). The vault's
+   `AGENTS.md` has the fallback. Grepping `Index.md` and `description:` lines is fine.
 3. Active content is `02_Projects/`, `03_Areas/`, `04_Resources/`. Exclude `00_Memory/`,
    `01_Capture/`, `05_Archive/`.
 
