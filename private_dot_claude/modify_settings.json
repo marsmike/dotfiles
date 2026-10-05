@@ -44,9 +44,19 @@ GUARD="$(jq -n --arg cmd "python3 '$HOME/.claude/hooks/vault-guard.sh'" '{
   timeout: 10
 }')"
 
+# scalable-guard: PreToolUse hook enforcing the broker rules on the Scalable
+# MCP in code (broker account only, never the Tagesgeldkonto; submit_* only
+# after a preview and Mike's explicit yes). The claude.ai Scalable connector
+# loads on every machine signed in to the account, trade tools included, and
+# defaultMode is bypassPermissions — so the guard must travel with it.
+SCALABLE_GUARD="$(jq -n --arg cmd "python3 '$HOME/.claude/hooks/scalable-guard.py'" '{
+  matcher: "mcp__scalable__.*|mcp__claude_ai_Scalable__.*",
+  hooks: [{type: "command", command: $cmd, timeout: 10}]
+}')"
+
 MODEL='claude-opus-5-5[1m]'
 
-echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --arg model "$MODEL" '
+echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --argjson sguard "$SCALABLE_GUARD" --arg model "$MODEL" '
     .statusLine = $sl
   | .model = $model
   | .permissions.defaultMode = "bypassPermissions"
@@ -64,5 +74,7 @@ echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --arg 
             else . end
           )
         else . + [{matcher: "Bash", hooks: [$guard]}] end
+      | if any(.[]; any(.hooks[]?; (.command // "") | test("scalable-guard")))
+        then . else . + [$sguard] end
     )
 '
