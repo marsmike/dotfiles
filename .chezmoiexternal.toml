@@ -1,0 +1,10 @@
+# Claude Code subagents (worker / scout / researcher) live in their own repo, so prompt edits
+# go live immediately; chezmoi clones it and private_dot_claude/agents/ symlinks into it.
+# Model pins are in the agent files (worker Sonnet 5.5, scout + researcher Haiku 5.5);
+# advisor + default subagent model come from private_dot_claude/modify_settings.json.
+["work/claude-subagents"]
+    type = "git-repo"
+    url = "https://github.com/marsmike/claude-subagents.git"
+    refreshPeriod = "168h"
+    [ "work/claude-subagents".pull ]
+        args = ["--ff-only"]
