@@ -63,12 +63,18 @@ MODEL='claude-opus-5-5[1m]'
 # (~/work/claude-subagents/agents). Bump versioned ids here and there together.
 ADVISOR='fable'
 SUBAGENT_MODEL='claude-sonnet-5-5'
+# The bare aliases lag releases (checked 2026-11-01: `sonnet` -> claude-sonnet-4-6,
+# `haiku` -> claude-haiku-4-5), so pin what they resolve to as well.
+SONNET='claude-sonnet-5-5'
+HAIKU='claude-haiku-5-5'
 
-echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --argjson sguard "$SCALABLE_GUARD" --arg model "$MODEL" --arg advisor "$ADVISOR" --arg sub "$SUBAGENT_MODEL" '
+echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --argjson sguard "$SCALABLE_GUARD" --arg model "$MODEL" --arg advisor "$ADVISOR" --arg sub "$SUBAGENT_MODEL" --arg sonnet "$SONNET" --arg haiku "$HAIKU" '
     .statusLine = $sl
   | .model = $model
   | .advisorModel = $advisor
   | .env.CLAUDE_CODE_SUBAGENT_MODEL = $sub
+  | .env.ANTHROPIC_DEFAULT_SONNET_MODEL = $sonnet
+  | .env.ANTHROPIC_DEFAULT_HAIKU_MODEL = $haiku
   | .permissions.defaultMode = "bypassPermissions"
   | .skipDangerousModePermissionPrompt = true
   | .hooks.PreToolUse = (
