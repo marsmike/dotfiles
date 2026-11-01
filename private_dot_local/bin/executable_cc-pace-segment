@@ -1,0 +1,43 @@
+#!/bin/bash
+# ccstatusline custom-command segment: weekly-limit pace + projected run-out.
+#
+# With only the 7-day limit left (no 5h window since 2026-10), "7% used" alone
+# says little; what matters is usage relative to how much of the week is gone.
+#
+#   pace ⇣14 lasts      used 14 points less than the elapsed share of the week;
+#                       at the average rate so far, the limit outlives the reset
+#   pace ⇡9 out 2d 3h   ahead of schedule; at that rate you hit 100% in 2d 3h,
+#                       before the reset
+#
+# Pure jq over the payload's rate_limits.seven_day: no network, no cache,
+# a few ms, so it stays well inside Claude Code's 300ms render debounce.
+# Prints nothing when the payload carries no weekly limit. Fails silently.
+
+payload="$(cat)"
+
+printf '%s' "$payload" | jq -r --argjson now "$(date +%s)" '
+  .rate_limits.seven_day // empty
+  | select(.used_percentage != null and .resets_at != null)
+  | (604800) as $W
+  | (.used_percentage | tonumber) as $used
+  | ([.resets_at - $now, 0] | max) as $left
+  | ([$W - $left, 1] | max) as $gone
+  | ($gone / $W * 100) as $elapsed
+  | ($used - $elapsed | round) as $d
+  | (if $d > 0 then "⇡\($d)" elif $d < 0 then "⇣\(-$d)" else "=" end) as $pace
+  | (if $used <= 0 then "lasts"
+     else ((100 - $used) / ($used / $gone)) as $out
+       | if $out >= $left then "lasts"
+         else ($out | floor) as $s
+           | (($s / 86400) | floor) as $dd
+           | ((($s % 86400) / 3600) | floor) as $hh
+           | ((($s % 3600) / 60) | floor) as $mm
+           | "out " + (if $dd > 0 then "\($dd)d \($hh)h"
+                       elif $hh > 0 then "\($hh)h \($mm)m"
+                       else "\($mm)m" end)
+         end
+     end) as $eta
+  | "pace \($pace) \($eta)"
+' 2>/dev/null
+
+exit 0
