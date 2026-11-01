@@ -56,9 +56,19 @@ SCALABLE_GUARD="$(jq -n --arg cmd "python3 '$HOME/.claude/hooks/scalable-guard.p
 
 MODEL='claude-opus-5-5[1m]'
 
-echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --argjson sguard "$SCALABLE_GUARD" --arg model "$MODEL" '
+# Model roles (Mike, 2026-11-01): main session Opus 5.5 (above), advisor Fable 5.1, subagents
+# Sonnet 5.5 by default (CLAUDE_CODE_SUBAGENT_MODEL covers the built-in general-purpose/Plan/
+# Explore agents, which would otherwise inherit Opus). Agents that pin `model:` in their
+# frontmatter keep it: worker = Sonnet 5.5, scout/researcher = Haiku 5.5
+# (~/work/claude-subagents/agents). Bump versioned ids here and there together.
+ADVISOR='fable'
+SUBAGENT_MODEL='claude-sonnet-5-5'
+
+echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --argjson sguard "$SCALABLE_GUARD" --arg model "$MODEL" --arg advisor "$ADVISOR" --arg sub "$SUBAGENT_MODEL" '
     .statusLine = $sl
   | .model = $model
+  | .advisorModel = $advisor
+  | .env.CLAUDE_CODE_SUBAGENT_MODEL = $sub
   | .permissions.defaultMode = "bypassPermissions"
   | .skipDangerousModePermissionPrompt = true
   | .hooks.PreToolUse = (
