@@ -14,6 +14,12 @@
 # --dangerously-skip-permissions. skipDangerousModePermissionPrompt drops the
 # one-time confirmation dialog for that mode.
 #
+# Per-machine override: ~/.config/claude-permission-mode holds one word (auto,
+# default, acceptEdits, plan or bypassPermissions) and is not managed by chezmoi.
+# With no file, or an empty one, the mode stays bypassPermissions. An unknown word
+# falls back to default, because a typo must never grant more than was asked for.
+# The dialog skip only applies to bypassPermissions. The cc* aliases read the same file.
+#
 # Status line: ccstatusline (https://github.com/sirmalloc/ccstatusline).
 # Layout lives in ~/.config/ccstatusline/settings.json, also managed by chezmoi.
 # An absolute command path is required: the status line runs in a spawned shell
@@ -68,15 +74,27 @@ SUBAGENT_MODEL='claude-sonnet-5-5'
 SONNET='claude-sonnet-5-5'
 HAIKU='claude-haiku-5-5'
 
-echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --argjson sguard "$SCALABLE_GUARD" --arg model "$MODEL" --arg advisor "$ADVISOR" --arg sub "$SUBAGENT_MODEL" --arg sonnet "$SONNET" --arg haiku "$HAIKU" '
+PERMISSION_MODE="$(tr -d '[:space:]' 2>/dev/null < "$HOME/.config/claude-permission-mode" || true)"
+case "$PERMISSION_MODE" in
+  '') PERMISSION_MODE='bypassPermissions' ;;
+  auto|default|acceptEdits|plan|bypassPermissions) ;;
+  *)
+    echo "claude-permission-mode: unknown mode '$PERMISSION_MODE', using default" >&2
+    PERMISSION_MODE='default'
+    ;;
+esac
+
+echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --argjson sguard "$SCALABLE_GUARD" --arg model "$MODEL" --arg advisor "$ADVISOR" --arg sub "$SUBAGENT_MODEL" --arg sonnet "$SONNET" --arg haiku "$HAIKU" --arg mode "$PERMISSION_MODE" '
     .statusLine = $sl
   | .model = $model
   | .advisorModel = $advisor
   | .env.CLAUDE_CODE_SUBAGENT_MODEL = $sub
   | .env.ANTHROPIC_DEFAULT_SONNET_MODEL = $sonnet
   | .env.ANTHROPIC_DEFAULT_HAIKU_MODEL = $haiku
-  | .permissions.defaultMode = "bypassPermissions"
-  | .skipDangerousModePermissionPrompt = true
+  | .permissions.defaultMode = $mode
+  | if $mode == "bypassPermissions"
+    then .skipDangerousModePermissionPrompt = true
+    else del(.skipDangerousModePermissionPrompt) end
   | .hooks.PreToolUse = (
       (.hooks.PreToolUse // [])
       | if any(.[]; .matcher == "Bash") then

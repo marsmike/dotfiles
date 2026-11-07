@@ -184,7 +184,22 @@ alias dk='docker'
 alias kctx='kubectl config use-context'
 alias kns='kubectl config set-context --current --namespace'
 
-# Claude Code launchers: bypass permissions (yolo), explicit model version, own git worktree.
+# Sets $reply to the permission flags for a Claude launch. A machine opts out of
+# bypass with ~/.config/claude-permission-mode (see ~/.claude/settings.json's modify
+# script): any mode other than bypassPermissions passes no flag, so the defaultMode
+# in settings.json applies. With no file, or an empty one, launchers keep bypassing.
+function _claude_perm_flags() {
+  local file=~/.config/claude-permission-mode mode=""
+  [[ -r "$file" ]] && mode="${$(<"$file")//[[:space:]]/}"
+  if [[ -z "$mode" || "$mode" == bypassPermissions ]]; then
+    reply=(--dangerously-skip-permissions)
+  else
+    reply=()
+  fi
+}
+
+# Claude Code launchers: bypass permissions (yolo, unless the machine opts out above),
+# explicit model version, own git worktree.
 #
 # Models are pinned to explicit versioned ids on purpose. The bare `opus` /
 # `sonnet` aliases have repeatedly lagged a generation behind during staged
@@ -229,8 +244,11 @@ function _cc() {
     [[ "$model" == *'[1m]'* ]] && launcher+=(--1m)
   fi
 
+  local -a reply
+  _claude_perm_flags
+
   if (( ! wt )) || ! git rev-parse --show-toplevel >/dev/null 2>&1; then
-    "${launcher[@]}" "${model_flag[@]}" --dangerously-skip-permissions "${args[@]}"
+    "${launcher[@]}" "${model_flag[@]}" "${reply[@]}" "${args[@]}"
     return
   fi
 
@@ -238,7 +256,7 @@ function _cc() {
     name="$(basename "$(git rev-parse --show-toplevel)")-$(date +%Y%m%d-%H%M)"
   fi
   print -u2 -P "%F{109}worktree: ${name}%f"
-  "${launcher[@]}" "${model_flag[@]}" --worktree "$name" --dangerously-skip-permissions "${args[@]}"
+  "${launcher[@]}" "${model_flag[@]}" --worktree "$name" "${reply[@]}" "${args[@]}"
 }
 
 alias cc='_cc "claude-sonnet-5-5[1m]"'        # Sonnet 5.5, 1M context — everyday driver
@@ -259,13 +277,13 @@ fi
 # Model: qwen3.8-27b-splash (splash engine), JIT-loaded on first request.
 # Env:   ~/.lmstudio.env (chezmoi: dot_lmstudio.env, no secret)
 function cclm() {
-  (source ~/.lmstudio.env && claude --dangerously-skip-permissions "$@")
+  (source ~/.lmstudio.env && _claude_perm_flags && claude "${reply[@]}" "$@")
 }
 
 # Claude Code routed through the F3A homelab box (Ornith-1.0-35B Q6_K-MTP, 35.9 t/s)
 # Gateway: llama.cpp native Anthropic /v1/messages via llama-swap @ 192.168.1.154:8080
 function cclmf3a() {
-  (source ~/.ornith-f3a.env && claude --dangerously-skip-permissions "$@")
+  (source ~/.ornith-f3a.env && _claude_perm_flags && claude "${reply[@]}" "$@")
 }
 
 # Claude Code routed through Kimi / Moonshot (Anthropic-compatible endpoint)
