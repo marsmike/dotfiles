@@ -331,9 +331,6 @@ autoload -U compinit && compinit
 # Set the default editor
 export EDITOR='nvim'
 
-# Set PATH, MANPATH, etc., as needed
-export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/home/mike/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
