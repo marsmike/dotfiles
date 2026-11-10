@@ -91,6 +91,7 @@ echo "$EXISTING" | jq --argjson sl "$STATUSLINE" --argjson guard "$GUARD" --argj
   | .env.CLAUDE_CODE_SUBAGENT_MODEL = $sub
   | .env.ANTHROPIC_DEFAULT_SONNET_MODEL = $sonnet
   | .env.ANTHROPIC_DEFAULT_HAIKU_MODEL = $haiku
+  | .modelSettings["claude-opus-5-5"].effortLevel = "high"
   | .permissions.defaultMode = $mode
   | if $mode == "bypassPermissions"
     then .skipDangerousModePermissionPrompt = true
