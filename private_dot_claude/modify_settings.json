@@ -62,12 +62,12 @@ SCALABLE_GUARD="$(jq -n --arg cmd "python3 '$HOME/.claude/hooks/scalable-guard.p
 
 MODEL='claude-opus-5-5[1m]'
 
-# Model roles (Mike, 2026-11-01): main session Opus 5.5 (above), advisor Fable 5.1, subagents
+# Model roles (Mike, 2026-11-01): main session Opus 5.5 (above), advisor Fable 5.2, subagents
 # Sonnet 5.5 by default (CLAUDE_CODE_SUBAGENT_MODEL covers the built-in general-purpose/Plan/
 # Explore agents, which would otherwise inherit Opus). Agents that pin `model:` in their
 # frontmatter keep it: worker = Sonnet 5.5, scout/researcher = Haiku 5.5
 # (~/work/claude-subagents/agents). Bump versioned ids here and there together.
-ADVISOR='fable'
+ADVISOR='claude-fable-5-2'
 SUBAGENT_MODEL='claude-sonnet-5-5'
 # The bare aliases lag releases (checked 2026-11-01: `sonnet` -> claude-sonnet-4-6,
 # `haiku` -> claude-haiku-4-5), so pin what they resolve to as well.
