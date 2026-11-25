@@ -1,0 +1,69 @@
+#!/usr/bin/python3
+"""Mount the DIVA NAS shares when the NAS is reachable.
+
+Run by the launchd agent de.objektarium.nas-mount at login, on every
+network change and every 5 minutes. Uses the Keychain entry for
+DIVA._smb._tcp.local (via Finder's "mount volume"), so no password here.
+Away from home the NAS is unreachable and the script exits quietly.
+"""
+import os
+import socket
+import subprocess
+import sys
+import time
+
+SERVER = "DIVA._smb._tcp.local"   # must match the Keychain entry
+PROBE_HOST = "diva.local"
+USER = "mike"
+# Mike = home share. personal_folder is retired (25.11.2026), not mounted.
+SHARES = ["Mike", "Media", "Downloads", "Developer"]
+
+
+def log(msg: str) -> None:
+    print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} {msg}", flush=True)
+
+
+def reachable(host: str, port: int = 445, timeout: float = 2.0) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def mounted_shares() -> set:
+    out = subprocess.run(["/sbin/mount", "-t", "smbfs"], capture_output=True, text=True).stdout
+    shares = set()
+    for line in out.splitlines():
+        src = line.split(" on ", 1)[0]
+        if src.lower().startswith(f"//{USER}@{SERVER}/".lower()):
+            shares.add(src.rsplit("/", 1)[1])
+    return shares
+
+
+def mount(share: str) -> None:
+    url = f"smb://{USER}@{SERVER}/{share}"
+    r = subprocess.run(["/usr/bin/osascript", "-e", f'mount volume "{url}"'],
+                       capture_output=True, text=True, timeout=60)
+    if r.returncode == 0:
+        log(f"mounted {share}")
+    else:
+        log(f"FAILED {share}: {r.stderr.strip()}")
+
+
+def main() -> int:
+    if not reachable(PROBE_HOST):
+        return 0  # not at home: nothing to do
+    have = mounted_shares()
+    for share in SHARES:
+        if share not in have:
+            mount(share)
+    # Libraries: the NAS share "Data" takes the name /Volumes/Data only when
+    # no local disk is called "Data" (travel mode, see data-mode).
+    if "Data" not in have and not os.path.exists("/Volumes/Data"):
+        mount("Data")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,5 @@
+#!/bin/bash
+# No .DS_Store files on SMB shares (NAS DIVA).
+{{ if eq .chezmoi.os "darwin" -}}
+defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
+{{ end -}}

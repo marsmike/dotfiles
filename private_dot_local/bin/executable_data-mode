@@ -1,0 +1,66 @@
+#!/usr/bin/python3
+"""Switch where /Volumes/Data (the sound libraries) comes from.
+
+  data-mode nas     libraries from the NAS share "Data"; the external disk
+                    is renamed to "Data-Lokal" so the name is free
+  data-mode lokal   for travel: NAS share unmounted, external disk renamed
+                    back to "Data"
+  data-mode         show the current state
+
+NI, UVI, UJAM, IK, Steinberg etc. find their content by the volume name
+"Data", so nothing has to be relocated in Native Access. Quit DAWs and
+plugin hosts before switching.
+"""
+import os
+import subprocess
+import sys
+
+LOCAL_NAME = "Data-Lokal"
+SERVER = "DIVA._smb._tcp.local"
+
+
+def run(*cmd):
+    return subprocess.run(cmd, capture_output=True, text=True)
+
+
+def data_source():
+    out = run("/sbin/mount").stdout
+    for line in out.splitlines():
+        if " on /Volumes/Data " in line:
+            return "nas" if "smbfs" in line else "lokal"
+    return None
+
+
+def state():
+    src = data_source()
+    local = "Data-Lokal vorhanden" if os.path.exists(f"/Volumes/{LOCAL_NAME}") else ""
+    print(f"/Volumes/Data: {src or 'nicht vorhanden'}" + (f" ({local})" if local else ""))
+
+
+def to_nas():
+    if data_source() == "lokal":
+        r = run("/usr/sbin/diskutil", "rename", "/Volumes/Data", LOCAL_NAME)
+        if r.returncode:
+            sys.exit(f"Umbenennen fehlgeschlagen: {r.stderr or r.stdout}")
+    if data_source() != "nas":
+        r = run("/usr/bin/osascript", "-e", f'mount volume "smb://mike@{SERVER}/Data"')
+        if r.returncode:
+            sys.exit(f"NAS-Freigabe Data nicht eingehaengt: {r.stderr.strip()}")
+    state()
+
+
+def to_local():
+    if data_source() == "nas":
+        r = run("/usr/sbin/diskutil", "unmount", "/Volumes/Data")
+        if r.returncode:
+            sys.exit(f"Aushaengen fehlgeschlagen (Programme noch offen?): {r.stderr or r.stdout}")
+    if os.path.exists(f"/Volumes/{LOCAL_NAME}"):
+        r = run("/usr/sbin/diskutil", "rename", f"/Volumes/{LOCAL_NAME}", "Data")
+        if r.returncode:
+            sys.exit(f"Umbenennen fehlgeschlagen: {r.stderr or r.stdout}")
+    state()
+
+
+if __name__ == "__main__":
+    arg = sys.argv[1] if len(sys.argv) > 1 else ""
+    {"nas": to_nas, "lokal": to_local}.get(arg, state)()

@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+"""Keep ~/Developer the same on every machine — via GitHub, no NAS.
+
+  dev-sync            clone repos from the list that are missing, fetch every
+                      repo, fast-forward clean ones, report the rest
+  dev-sync --push     additionally push repos that are only ahead (before
+                      switching machines)
+  dev-sync --prune    move repos that are no longer in the list to the Trash,
+                      but only when clean and fully pushed
+  dev-sync --missing  also list own GitHub repos that are in neither place
+  dev-sync --notify   macOS notification when something needs attention
+                      (used by the launchd agent de.objektarium.dev-sync)
+
+The list: ~/.config/dev-sync/repos.txt (managed by chezmoi), one repo per
+line, "name" (= marsmike/name) or "owner/name", "#" for comments.
+
+Never touches uncommitted work, never rebases or merges, never pushes unless
+--push is given. Replaces the NAS-based ~/Developer/sync.sh (25.11.2026).
+"""
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+DEV = Path(os.environ.get("DEV_DIR", Path.home() / "Developer"))
+LIST = Path(os.environ.get("DEV_SYNC_LIST", Path.home() / ".config" / "dev-sync" / "repos.txt"))
+GH_OWNER = "marsmike"
+TIMEOUT = 60
+
+
+def load_list():
+    """{local dir name: owner/name} from the repo list."""
+    wanted = {}
+    for line in LIST.read_text().splitlines():
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        full = line if "/" in line else f"{GH_OWNER}/{line}"
+        wanted[full.split("/", 1)[1]] = full
+    return wanted
+
+
+def clone(full, target):
+    r = subprocess.run(["git", "clone", "--quiet", f"https://github.com/{full}.git", str(target)],
+                       capture_output=True, text=True, timeout=600)
+    return r.returncode == 0, r.stderr.strip().splitlines()[-1] if r.stderr.strip() else ""
+
+
+def safe_to_remove(repo):
+    """Clean, no stash, every local branch contained in some remote branch."""
+    git(repo, "fetch", "--all", "--quiet")
+    _, dirty, _ = git(repo, "status", "--porcelain")
+    _, stash, _ = git(repo, "stash", "list")
+    _, unpushed, _ = git(repo, "log", "--branches", "--not", "--remotes", "--oneline")
+    reasons = [x for x, bad in (("uncommitted", dirty), ("stash", stash), ("unpushed", unpushed)) if bad]
+    return not reasons, ", ".join(reasons)
+
+
+def to_trash(path):
+    script = f'tell application "Finder" to delete (POSIX file {json.dumps(str(path))} as alias)'
+    return subprocess.run(["osascript", "-e", script], capture_output=True).returncode == 0
+
+
+def git(repo, *args, timeout=TIMEOUT):
+    r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True,
+                       text=True, timeout=timeout)
+    return r.returncode, r.stdout.strip(), r.stderr.strip()
+
+
+def repo_state(repo):
+    """Return (status, detail) after fetch and a possible fast-forward."""
+    # Migration: drop the retired NAS bare-repo remote, track origin instead.
+    rc, nas_url, _ = git(repo, "remote", "get-url", "nas")
+    if rc == 0 and "personal_folder" in nas_url:
+        _, branch, _ = git(repo, "symbolic-ref", "--short", "-q", "HEAD")
+        git(repo, "fetch", "--quiet", "origin")
+        git(repo, "remote", "remove", "nas")
+        if branch:
+            git(repo, "branch", "--quiet", f"--set-upstream-to=origin/{branch}", branch)
+    rc, _, err = git(repo, "fetch", "--all", "--prune", "--quiet")
+    if rc:
+        return "fetch-error", err.splitlines()[-1] if err else "fetch failed"
+    _, branch, _ = git(repo, "symbolic-ref", "--short", "-q", "HEAD")
+    if not branch:
+        return "detached", "HEAD detached"
+    rc, upstream, _ = git(repo, "rev-parse", "--abbrev-ref", "@{u}")
+    if rc:
+        return "no-upstream", f"{branch} has no upstream"
+    _, counts, _ = git(repo, "rev-list", "--left-right", "--count", "HEAD...@{u}")
+    ahead, behind = (int(x) for x in counts.split())
+    _, dirty, _ = git(repo, "status", "--porcelain")
+    ndirty = len(dirty.splitlines()) if dirty else 0
+
+    pulled = 0
+    if behind and not ahead and not ndirty:
+        rc, _, err = git(repo, "merge", "--ff-only", "--quiet", "@{u}")
+        if rc:
+            return "pull-error", err.splitlines()[-1] if err else "ff failed"
+        pulled, behind = behind, 0
+
+    if push_mode and ahead and not behind:
+        rc, _, err = git(repo, "push", "--quiet")
+        if rc:
+            return "push-error", err.splitlines()[-1] if err else "push failed"
+        return "pushed", f"{ahead} commit(s) pushed" + (f", {ndirty} uncommitted" if ndirty else "")
+
+    issues = []
+    if ndirty:
+        issues.append(f"{ndirty} uncommitted")
+    if ahead:
+        issues.append(f"{ahead} not pushed")
+    if behind:
+        issues.append(f"{behind} behind (not pulled: local changes)")
+    if issues:
+        return "attention", ", ".join(issues)
+    return ("pulled", f"{pulled} new commit(s)") if pulled else ("ok", "")
+
+
+def missing_on_github(local):
+    r = subprocess.run(["gh", "repo", "list", GH_OWNER, "--limit", "300", "--json",
+                        "name,isArchived,isFork"], capture_output=True, text=True)
+    if r.returncode:
+        return None
+    names = {x["name"] for x in json.loads(r.stdout) if not x["isArchived"] and not x["isFork"]}
+    return sorted(names - local)
+
+
+def notify(text):
+    script = f'display notification {json.dumps(text)} with title "dev-sync"'
+    subprocess.run(["osascript", "-e", script], capture_output=True)
+
+
+def main():
+    rows = []
+    wanted = load_list() if LIST.exists() else None
+    if wanted is None:
+        print(f"no repo list at {LIST} — only syncing what is here")
+    else:
+        for name, full in sorted(wanted.items()):
+            if not (DEV / name).exists():
+                ok, err = clone(full, DEV / name)
+                rows.append((name, "cloned" if ok else "clone-error", full if ok else err))
+
+    repos = sorted(p for p in DEV.iterdir() if (p / ".git").exists())
+    if wanted is not None:
+        for repo in [r for r in repos if r.name not in wanted]:
+            if "--prune" in sys.argv:
+                ok, why = safe_to_remove(repo)
+                if ok and to_trash(repo):
+                    rows.append((repo.name, "pruned", "not in list, moved to Trash"))
+                else:
+                    rows.append((repo.name, "attention", f"not in list, kept: {why or 'Trash failed'}"))
+            else:
+                rows.append((repo.name, "unlisted", "not in repos.txt (dev-sync --prune removes it)"))
+        repos = [r for r in repos if r.name in wanted]
+
+    for repo in repos:
+        if any(row[0] == repo.name and row[1] == "cloned" for row in rows):
+            continue
+        try:
+            status, detail = repo_state(repo)
+        except subprocess.TimeoutExpired:
+            status, detail = "fetch-error", "timeout (offline?)"
+        rows.append((repo.name, status, detail))
+
+    for name, status, detail in rows:
+        if status != "ok":
+            print(f"{name:24s} {status:12s} {detail}")
+    ok = sum(1 for r in rows if r[1] == "ok")
+    print(f"{ok}/{len(rows)} repos up to date")
+
+    if "--missing" in sys.argv:
+        missing = missing_on_github({r[0] for r in rows} | set(wanted or {}))
+        if missing is None:
+            print("GitHub list failed (gh auth?)")
+        elif missing:
+            print(f"on GitHub, not here ({len(missing)}): {', '.join(missing)}")
+
+    attention = [r for r in rows if r[1] in ("attention", "pull-error", "push-error", "detached",
+                                             "no-upstream", "clone-error", "unlisted")]
+    offline = all(r[1] == "fetch-error" for r in rows) and rows
+    if "--notify" in sys.argv and attention and not offline:
+        names = ", ".join(r[0] for r in attention[:4]) + (" …" if len(attention) > 4 else "")
+        notify(f"{len(attention)} Repo(s) brauchen Aufmerksamkeit: {names}")
+    return 0
+
+
+push_mode = "--push" in sys.argv
+if __name__ == "__main__":
+    sys.exit(main())

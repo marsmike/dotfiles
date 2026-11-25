@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>de.objektarium.nas-mount</string>
+  <key>ProgramArguments</key>
+  <array><string>{{ .chezmoi.homeDir }}/.local/bin/nas-mount</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>StartInterval</key><integer>300</integer>
+  <key>WatchPaths</key>
+  <array><string>/Library/Preferences/SystemConfiguration</string></array>
+  <key>ThrottleInterval</key><integer>15</integer>
+  <key>StandardOutPath</key><string>{{ .chezmoi.homeDir }}/Library/Logs/nas-mount.log</string>
+  <key>StandardErrorPath</key><string>{{ .chezmoi.homeDir }}/Library/Logs/nas-mount.log</string>
+</dict>
+</plist>

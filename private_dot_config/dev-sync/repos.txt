@@ -1,0 +1,25 @@
+# Repos, die auf jedem Rechner in ~/Developer liegen sollen.
+# Eine Zeile pro Repo: name (= marsmike/name) oder owner/name.
+# Neu eintragen -> dev-sync klont es ueberall. Entfernen -> dev-sync --prune raeumt es weg.
+# Der NAS-Spiegel (Developer/git-mirror) liest dieselbe Liste aus dem dotfiles-Repo.
+agentic-toolkit
+autopilot
+clawdrican
+conductor
+cricut-ds-internals
+diffbin
+dotfiles
+feinschmiede
+fieldprep
+gearbook
+learn-production
+llm-bench
+marsmike.com
+midi-control
+mpc-sample
+music-lab
+musicfreak
+raise-merch
+setup
+synthlab
+vst-scanner

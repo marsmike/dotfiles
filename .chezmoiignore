@@ -21,4 +21,6 @@ private_dot_claude/settings.local.json
 # macOS-only LaunchAgents
 {{ if ne .chezmoi.os "darwin" }}
 Library/**
+.local/bin/nas-mount
+.local/bin/data-mode
 {{ end }}
