@@ -5,6 +5,12 @@
                     is renamed to "Data-Lokal" so the name is free
   data-mode lokal   for travel: NAS share unmounted, external disk renamed
                     back to "Data"
+  data-mode sync    make the external disk an exact copy of the NAS share
+                    (rsync --delete; shows what changes and asks first).
+                    Run it before travelling: updates land on the NAS.
+  data-mode sync --to-nas
+                    the other way round, after travelling with updates
+                    installed on the external disk
   data-mode         show the current state
 
 NI, UVI, UJAM, IK, Steinberg etc. find their content by the volume name
@@ -55,6 +61,54 @@ def to_nas():
     state()
 
 
+RSYNC = "/opt/homebrew/bin/rsync" if os.path.exists("/opt/homebrew/bin/rsync") else "/usr/bin/rsync"
+EXCLUDES = [".DS_Store", "._*", ".Spotlight-V100", ".Trashes", ".fseventsd", ".TemporaryItems",
+            ".DocumentRevisions-V100", "#recycle", "@eaDir", ".VolumeIcon.icns"]
+
+
+def paths():
+    """(nas share path, local disk path) — whichever names they have now."""
+    nas = local = None
+    for line in run("/sbin/mount").stdout.splitlines():
+        src, _, rest = line.partition(" on ")
+        path = rest.split(" (")[0]
+        if not path.startswith("/Volumes/Data"):
+            continue
+        if "smbfs" in rest and src.lower().endswith("/data"):
+            nas = path
+        elif "smbfs" not in rest and path in ("/Volumes/Data", f"/Volumes/{LOCAL_NAME}"):
+            local = path
+    if not nas or not local:
+        sys.exit("Fuer sync muessen NAS-Freigabe Data und die externe Platte eingehaengt sein.")
+    return nas, local
+
+
+def sync():
+    nas, local = paths()
+    src, dst = (local, nas) if "--to-nas" in sys.argv else (nas, local)
+    tops = [e for e in os.listdir(src) if not e.startswith(".") and e not in EXCLUDES]
+    if len(tops) < 5:  # guard: a half-mounted or empty source must never wipe the target
+        sys.exit(f"Quelle {src} hat nur {len(tops)} Ordner — abgebrochen, nichts geaendert.")
+    base = [RSYNC, "-rltW", "--size-only", "--delete"] + [f"--exclude={e}" for e in EXCLUDES]
+    print(f"Vergleiche {src} -> {dst} (dauert ueber SMB einige Minuten) ...", flush=True)
+    dry = run(*base, "-n", "--itemize-changes", src + "/", dst + "/").stdout.splitlines()
+    copy = [l[12:] for l in dry if l.startswith(">f")]
+    delete = [l[10:] for l in dry if l.startswith("*deleting")]
+    if not copy and not delete:
+        print("Beide Seiten sind gleich.")
+        return
+    print(f"{len(copy)} Datei(en) kopieren/ersetzen, {len(delete)} Datei(en)/Ordner in {dst} loeschen:")
+    for l in (copy[:15] + ["…"] if len(copy) > 15 else copy):
+        print("  +", l)
+    for l in (delete[:15] + ["…"] if len(delete) > 15 else delete):
+        print("  -", l)
+    if "--yes" not in sys.argv and input("Ausfuehren? [j/N] ").strip().lower() not in ("j", "ja", "y"):
+        print("Nichts geaendert.")
+        return
+    r = subprocess.run(base + ["--info=progress2", src + "/", dst + "/"])
+    print("fertig" if r.returncode == 0 else f"rsync exit {r.returncode}")
+
+
 def to_local():
     if data_source() == "nas":
         r = run("/usr/sbin/diskutil", "unmount", "/Volumes/Data")
@@ -69,4 +123,4 @@ def to_local():
 
 if __name__ == "__main__":
     arg = sys.argv[1] if len(sys.argv) > 1 else ""
-    {"nas": to_nas, "lokal": to_local}.get(arg, state)()
+    {"nas": to_nas, "lokal": to_local, "sync": sync}.get(arg, state)()
