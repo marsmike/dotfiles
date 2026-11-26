@@ -43,6 +43,12 @@ def to_nas():
         if r.returncode:
             sys.exit(f"Umbenennen fehlgeschlagen: {r.stderr or r.stdout}")
     if data_source() != "nas":
+        # The share may already hang under another name (/Volumes/Data-1)
+        # because the local disk had the name; remount it to get "Data".
+        for line in run("/sbin/mount", "-t", "smbfs").stdout.splitlines():
+            src, _, rest = line.partition(" on ")
+            if src.lower() == f"//mike@{SERVER}/data".lower():
+                run("/usr/sbin/diskutil", "unmount", rest.split(" (")[0])
         r = run("/usr/bin/osascript", "-e", f'mount volume "smb://mike@{SERVER}/Data"')
         if r.returncode:
             sys.exit(f"NAS-Freigabe Data nicht eingehaengt: {r.stderr.strip()}")
