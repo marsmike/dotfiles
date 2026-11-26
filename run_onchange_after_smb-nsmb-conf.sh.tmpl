@@ -1,0 +1,18 @@
+#!/bin/bash
+# SMB client tuning for the NAS DIVA: no signing (much faster on 2.5/10 GbE),
+# multichannel, prefer wired. /etc is root-owned: one admin prompt, and only
+# when the file differs. Re-runs when this file changes.
+{{ if eq .chezmoi.os "darwin" -}}
+want='[default]
+signing_required=no
+mc_on=yes
+mc_prefer_wired=yes'
+if [ "$(cat /etc/nsmb.conf 2>/dev/null)" != "$want" ]; then
+    tmp=$(mktemp)
+    printf '%s\n' "$want" > "$tmp"
+    /usr/bin/osascript -e "do shell script \"install -m 644 -o root -g wheel '$tmp' /etc/nsmb.conf\" with administrator privileges with prompt \"chezmoi: SMB-Einstellungen für das NAS DIVA nach /etc/nsmb.conf schreiben\"" \
+        && echo "nsmb.conf written (takes effect on the next SMB mount)" \
+        || echo "nsmb.conf NOT written (prompt cancelled) — run 'chezmoi apply' again later"
+    rm -f "$tmp"
+fi
+{{ end -}}

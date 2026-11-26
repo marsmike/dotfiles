@@ -1,0 +1,107 @@
+#!/usr/bin/python3
+"""Compare the local "Data" disk with the NAS share "Data", folder by folder.
+
+  data-check                 every top-level folder of the local disk
+  data-check NI Kontakt      only these folders
+  data-check --copy NI       copy what the NAS lacks (rsync, never deletes,
+                             skips files of the same size = already there)
+
+For each folder: file count and bytes on both sides, then
+  identisch     same count and bytes — the NAS copy is complete
+  abweichend    both have it, but not the same (shows the difference)
+  nur lokal     not on the NAS yet
+and at the end the folders that exist only on the NAS.
+
+Read-only unless --copy is given; never deletes anything. Which side is the
+local disk is found by the mount type, so it works before and after
+"data-mode nas" (local disk = /Volumes/Data or /Volumes/Data-Lokal, NAS share
+= /Volumes/Data or /Volumes/Data-1 ...). Listing over SMB is slow: NI with
+~340k files takes a few minutes.
+"""
+import os
+import subprocess
+import sys
+
+SKIP = {".DS_Store", ".Spotlight-V100", ".Trashes", ".fseventsd", ".TemporaryItems",
+        ".DocumentRevisions-V100", "$RECYCLE.BIN", "System Volume Information"}
+RSYNC = "/opt/homebrew/bin/rsync" if os.path.exists("/opt/homebrew/bin/rsync") else "/usr/bin/rsync"
+
+
+def mounts():
+    """(local disk path, NAS share path) or exit with a hint."""
+    local = nas = None
+    for line in subprocess.run(["/sbin/mount"], capture_output=True, text=True).stdout.splitlines():
+        src, _, rest = line.partition(" on ")
+        path = rest.split(" (")[0]
+        if not path.startswith("/Volumes/Data"):
+            continue
+        if "smbfs" in rest and src.lower().endswith("/data"):
+            nas = path
+        elif "smbfs" not in rest and path in ("/Volumes/Data", "/Volumes/Data-Lokal"):
+            local = path
+    if not local:
+        sys.exit("Keine lokale Platte 'Data' oder 'Data-Lokal' eingehaengt.")
+    if not nas:
+        sys.exit("NAS-Freigabe Data nicht eingehaengt. Finder: Gehe zu > Mit Server verbinden > "
+                 "smb://DIVA._smb._tcp.local/Data")
+    return local, nas
+
+
+def tally(path):
+    n = size = 0
+    for root, dirs, files in os.walk(path):
+        dirs[:] = [d for d in dirs if d not in SKIP]
+        for f in files:
+            if f in SKIP or f.startswith("._"):
+                continue
+            try:
+                size += os.lstat(os.path.join(root, f)).st_size
+                n += 1
+            except OSError:
+                pass
+    return n, size
+
+
+def gb(b):
+    return f"{b / 1e9:,.1f} GB" if b >= 1e8 else f"{b / 1e6:,.1f} MB"
+
+
+def entries(path):
+    return sorted(e for e in os.listdir(path) if e not in SKIP and not e.startswith("._"))
+
+
+def main():
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    copy = "--copy" in sys.argv
+    local, nas = mounts()
+    print(f"lokal: {local}    NAS: {nas}\n")
+    folders = args or [e for e in entries(local) if os.path.isdir(os.path.join(local, e))]
+    for name in folders:
+        a = os.path.join(local, name)
+        b = os.path.join(nas, name)
+        if not os.path.isdir(a):
+            print(f"{name:28s} nicht auf der lokalen Platte")
+            continue
+        na, sa = tally(a)
+        if not os.path.isdir(b):
+            print(f"{name:28s} nur lokal     {na:>8,} Dateien {gb(sa):>11}")
+        else:
+            nb, sb = tally(b)
+            if (na, sa) == (nb, sb):
+                print(f"{name:28s} identisch     {na:>8,} Dateien {gb(sa):>11}")
+            else:
+                print(f"{name:28s} abweichend    lokal {na:,} / {gb(sa)}   NAS {nb:,} / {gb(sb)}")
+        if copy:
+            print(f"  kopiere {name} -> NAS ...", flush=True)
+            r = subprocess.run([RSYNC, "-rlW", "--size-only", "--exclude=.DS_Store", "--exclude=._*",
+                                a, nas + "/"])
+            print(f"  rsync exit {r.returncode}")
+    if not args:
+        only_nas = [e for e in entries(nas) if os.path.isdir(os.path.join(nas, e))
+                    and not os.path.exists(os.path.join(local, e))]
+        if only_nas:
+            print(f"\nnur auf dem NAS: {', '.join(only_nas)}")
+
+
+if __name__ == "__main__":
+    main()

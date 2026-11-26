@@ -23,4 +23,5 @@ private_dot_claude/settings.local.json
 Library/**
 .local/bin/nas-mount
 .local/bin/data-mode
+.local/bin/data-check
 {{ end }}
