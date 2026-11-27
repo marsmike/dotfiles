@@ -262,7 +262,7 @@ function _cc() {
 alias cc='_cc "claude-sonnet-5-5[1m]"'        # Sonnet 5.5, 1M context — everyday driver
 alias cco='_cc "claude-opus-5-5[1m]"'         # Opus 5.5, 1M context — heavier reasoning
 alias cch='_cc "claude-haiku-5-5"'           # Haiku 5.5 — fastest / cheapest
-alias ccf='_cc "claude-fable-5-1[1m]"'        # Fable 5.1 — thinking always on, most capable
+alias ccf='_cc "claude-fable-5-2[1m]"'        # Fable 5.2 — thinking always on, most capable
 
 # Claude Code OAuth token created by `claude setup-token`, stored in Keychain.
 if [[ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]]; then
@@ -365,7 +365,7 @@ Claude Code (model versions pinned explicitly — bump them at each release):
   cc    sonnet-5.5 1M (skip perms)         - default everyday driver
   cco   opus-5.5   1M (skip perms)         - heavier reasoning
   cch   haiku-5.5     (skip perms)         - fastest / cheapest
-  ccf   fable-5.1  1M (skip perms)         - most capable; thinking always on
+  ccf   fable-5.2  1M (skip perms)         - most capable; thinking always on
   cck   kimi-k3       (skip perms)         - Kimi/Moonshot; KIMI_MODEL=... to switch
   cclm  qwen3.8-27b-splash                 - local LM Studio @ localhost:1234
   cclmf3a Ornith-35B Q6_K-MTP (35.9 t/s)   - F3A homelab gateway @ 192.168.1.154:8080
@@ -414,7 +414,7 @@ alias cchelp='aihelp'
 # greeting and on demand via `agents` / `ai`; `aihelp` has the full reference.
 function agents() {
   local -a rows=(
-    '173|claude  |cc sonnet-5.5 · cco opus-5.5 · ccf fable-5.1 · cch haiku · cck kimi · cclm local'
+    '173|claude  |cc sonnet-5.5 · cco opus-5.5 · ccf fable-5.2 · cch haiku · cck kimi · cclm local'
     '109|opencode|oc glm-5.3 · ock kimi-k3 · ocf glm-5.3-flash · ocd ds-v4.1-flash · oclm local'
     '150|pi      |p local splash · pk kimi-k3 · pg glm-5.3'
     '250|codex   |cx sol · cxa astra · cxf sol-fast · cxl luna'
